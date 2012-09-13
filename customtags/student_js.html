@@ -1,0 +1,14 @@
+// Initialize lesson data
+var g_students = {};
+{% for student in students %}
+var student = {};
+student.logged_in ={% if student.is_logged_in %} true; {% else %} false; {% endif %}
+student.task_idx = {{ student.task_idx }}
+student.tasks = [];
+student.task_history = [];
+{% for task in student.lesson.tasks %}
+student.tasks.push({});
+student.task_history.push([]);
+{% endfor %}
+g_students["{{ student.nickname }}"] = student;
+{% endfor %}

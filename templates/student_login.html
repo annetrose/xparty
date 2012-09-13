@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{# vim: set sw=2 ts=2 expandtab: #}
+
+{% block head %} 
+<title>XParty - Student Login</title>
+
+<script type="text/javascript">
+// <![CDATA[
+    $(document).ready(function() {
+        $(".login_box").keyup(function(event) {
+            if (event.which == 13) {   // Enter key
+                login(event);
+            }    
+        });
+       
+        $('#login_button').click(function(event) {
+            login(event);
+        });
+    });
+
+    function login(event) {
+        $.post("/student_login_handler", 
+            {
+                "lesson_code": $('#lesson_code_field').val(),
+                "student_nickname": $('#student_nickname').val()
+            }, 
+            login_callback, 'json');
+        }
+
+    function login_callback(data) {
+        status = data['status'];
+        if (status == 'logged_in') {
+            window.location.replace("/student");
+        }
+        else if (status == 'logged_out') {
+            window.location.replace("/student_login");
+        }
+    }  
+// ]]>
+</script>  
+{% endblock %}
+
+{% block body %} 
+    <div class="container_16 cntrmain">
+	   <div class="grid_16 branding">
+		  {{ header|safe }}
+		  {% if msg %}<div class="msg"><p>{{ msg }}</p></div>{% endif %}
+	      <div class="clear"></div>
+	   </div><!--- end grid_16 -->
+    </div><!-- end container_16 -->
+
+    <div class="container_16">
+	   <div class="grid_16 main">
+	      <header class="info">
+            <h2>Student login</h2>
+          </header>
+          <div id="content">
+		  <form>
+		    <ul>
+                <li>
+				    <span>
+						<label class="desc">Student name:</label>
+						<input type="text" id="student_nickname" value="" class="login_box field text fn" name="student_nickname"><br/>
+					    <span class="note">Leave empty to login anonymously</span>
+					</span>
+				</li>
+				<li>
+					<span>
+					   <label class="desc">Activity code:</label>
+					   <input type="text" id="lesson_code_field" value="" class="login_box field text fn" name="lesson_code">
+					</span>
+				</li>
+				<li>
+					<div class="frmtxt"><input type="button" id="login_button" class="cssbtn" value="Login"></div>
+				</li>
+			</ul>
+		  </form>
+
+          <!--
+		  <h3 style="margin-top:15px">Activities <span id="lesson_filter" style="margin-left:5px"></span></h3>
+          <div id="lesson_list" class="accordion2" style="max-width:700px">(none)</div>
+          -->
+          </div><!-- end content -->
+       </div><!--- end grid_16 -->
+    </div><!--- end container_16-->
+</div>
+{% endblock %}

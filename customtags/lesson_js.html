@@ -1,0 +1,22 @@
+// Initialize lesson data
+var g_lessons = [];
+{% for lesson in lessons %}
+var lesson = {};
+lesson.lesson_code = "{{ lesson.lesson_code }}";
+lesson.title = "{{ lesson.title }}";
+lesson.class_name = "{{ lesson.class_name }}";
+lesson.description = "{{ lesson.description }}";
+lesson.teacher_name = "{{ lesson.teacher.nickname }}";
+lesson.start_time ={% if lesson.start_time %} new Date("{{ lesson.start_time }}"); {% else %} null; {% endif %}
+lesson.end_time ={% if lesson.end_time %} new Date("{{ lesson.end_time }}"); {% else %} null; {% endif %}
+lesson.is_active ={% if lesson.is_active %} true; {% else %} false; {% endif %}
+lesson.tasks = [];
+{% for task in lesson.tasks %}
+var task = [];
+task.push("{{ task.0 }}");
+task.push("{{ task.1 }}");
+task.push("{{ task.2 }}");
+lesson.tasks.push(task);
+{% endfor %}
+g_lessons.push(lesson);
+{% endfor %}
