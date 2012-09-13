@@ -1,0 +1,69 @@
+application: xparty-test
+version: dev
+
+# For Python 2.7:
+runtime: python27
+
+api_version: 1
+
+inbound_services:
+- channel_presence
+
+libraries:
+- name: django
+  version: "1.2"
+
+handlers:
+- url: /remote_api
+  script: $PYTHON_LIB/google/appengine/ext/remote_api/handler.py
+  login: admin
+
+- url: /css
+  static_dir: css
+  
+- url: /imgs
+  static_dir: imgs
+
+- url: /js
+  static_dir: js
+
+- url: /html
+  static_dir: html
+  
+- url: .*
+  script: main.py
+ 
+#builtins:
+#- appstats: on
+
+threadsafe: false
+
+skip_files:
+# File types to ignore
+- ^(.*/)?app\.yaml
+- ^(.*/)?app\.yml
+- ^(.*/)?index\.yaml
+- ^(.*/)?index\.yml
+- ^(.*/)?#.*#
+- ^(.*/)?.*~
+- ^(.*/)?.*\.py[co]
+- ^(.*/)?.*/RCS/.*
+- ^(.*/)?\..*
+- ^(.*/)?.*\.zip$
+- ^(.*/)?.*\.swp$
+- ^(.*/)?.*\.swo$
+- ^(.*/)?.*\.pptx$
+- ^(.*/)?.*\.ppt$
+- ^(.*/)?.*\.bat$
+- ^(.*/)?.*\.txt$
+- ^(.*[^a-zA-Z])?delme[^a-zA-Z].*
+- ^(.*/)?js/graph/.*\.html$
+# Specific files to ignore
+- ^(.*/)?js/graph/example\.js$
+# Directories to ignore
+- ^(.*/)?junk/.+
+- ^(.*/)?scripts/.+
+- ^(.*/)?backup/.+
+- ^(.*/)?doc/.+
+- ^(.*/)?templatetags/.*
+- ^(.*/)?\.svn/.*
