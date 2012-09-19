@@ -1,48 +1,50 @@
-THUMBS_UP_URL = "/imgs/check.png"; 
-THUMBS_DOWN_URL = "/imgs/no.png";
-MAX_TAG_LENGTH = 30;
+/*
+# XParty - A Framework for Building Tools for Learning in a Web-Based Classroom
+# Authors: Ben Bederson - www.cs.umd.edu/~bederson
+#          Alex Quinn -- www.alexquinn.org
+#          University of Maryland, Human-Computer Interaction Lab - www.cs.umd.edu/hcil
+# Date: Originally created July 2011
+# License: Apache License 2.0 - http://www.apache.org/licenses/LICENSE-2.0
+*/
 
-function clipText(s, maxLength) {
-	var dots = "...";
-	var sLength = s.length;
-	if (sLength > maxLength) {
-		s = s.substr(0, maxLength - dots.length) + dots;
+//=================================================================================
+// URLs
+//=================================================================================
+
+function getSpecificURLParameter(url, theArgName) {
+	/* Thanks to  Eric Scheid ("ironclad") for this snippet, which was downloaded from ...
+	 * http://www.evolt.org/article/Javascript_to_Parse_URLs_in_the_Browser/17/14435/?format=print
+	 * ... on 4-27-2010 ...
+	 * ... and adapted by Alex Quinn.
+	 */
+
+	var queryString = url.slice(url.indexOf("?"));
+	var sArgs = queryString.slice(1).split('&');
+    var r = '';
+    for (var i = 0; i < sArgs.length; i++) {
+        if (sArgs[i].slice(0,sArgs[i].indexOf('=')) == theArgName) {
+            r = sArgs[i].slice(sArgs[i].indexOf('=')+1);
+            break;
+        }
+    }
+    r = (r.length > 0 ? unescape(r).split(',') : '');
+	if (r.length==1) {
+		r = r[0];
 	}
-	return s;
-}
-
-function makeLinkHTML(linkInfo, maxLength, className, onclick) {
-	var url = linkInfo.url;
-	var title = linkInfo.title;
-	url = escapeForHtml(url);
-	var displayTitle;
-
-	if (maxLength !== null && maxLength !== 0) {
-		displayTitle = clipText(title, maxLength);
+	else if (r.length==0) {
+		r = '';
 	}
 	else {
-		displayTitle = title;
+		r = '';
 	}
-	displayTitle = escapeForHtml( displayTitle );
-	var moreAttrs = "";
-	if (className) {
-		moreAttrs += ' class="' + className + '"';
-	}
-	if (onclick) {
-		moreAttrs += ' onclick="' + onclick + '"';
-	}
-	var linkHTML = '<a href="' + url + '" title="' + title + '" target="_blank" ' + moreAttrs + '>' + displayTitle + '</a>';
-
-	return linkHTML;
+	return r;
 }
 
-function escapeForHtml(s) {
-	return s.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;");
-}
+//=================================================================================
+// Time
+//=================================================================================
 
-function makeTimestamp() {
-	return (new Date()).toLocaleTimeString();
-}
+var g_months = [ 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December' ]
 
 function getLocalTime(gmt)  {
     var min = gmt.getTime() / 1000 / 60; // convert gmt date to minutes
@@ -51,7 +53,6 @@ function getLocalTime(gmt)  {
     return new Date(localTime * 1000 * 60); // convert it into a date
 }
 
-var g_months = [ 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December' ]
 function getFormattedTimestamp(ts) {
     var month = ''+(ts.getMonth()+1);
     if (month.length==1) month = '0' + month;
@@ -73,86 +74,37 @@ function getFormattedNumericDate(ts) {
     return month + '/' + day + '/'+ ts.getFullYear();
 }
 
-function getTimestamp() {
-	var ts = new Date();
-    var month = g_months[ts.getMonth()];
-    var date =  g_months[ts.getMonth()] + ' ' + ts.getDate() + ', '+ ts.getFullYear();
-    var hours = ''+ts.getHours();
-    var mins = ''+ts.getMinutes();
-    if (mins.length == 1) mins = '0' + mins;
-    var secs = ''+ts.getSeconds();
-    if (secs.length == 1) mins = '0' + mins;
-    var time = hours + ':' + mins + ':' + secs;
-    return date + ' ' + time;
+//=================================================================================
+// Misc
+//=================================================================================
+
+function escapeForHtml(s) {
+	return s.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;");
 }
 
-function parseUrl(url) {
-	var urlRegExp = new RegExp("^([a-z]{3,5})"    // type
-			                 + "://"              // ://
-							 + "([^?/#:]+)"       // domain
-							 + "(:([0-9]{1,5}))?" // port
-							 + "(/[^?#:]*)?"      // path
-							 + "(\\?([^?/#:]+))?" // query string
-							 + "(#[^?/#:]*)?");   // hash locator
-	var parts = urlRegExp.exec(url);
-	return {
-		type: parts[1],
-		domain: parts[2],
-		port: parts[4] || null,
-		path: parts[5] || null,
-		queryString: (parts[7] || null)
-	};
+function dict2Array(dict) {
+	var dictArray = [];
+	for (key in dict) {
+		dictArray.push(dict[key]);
+	}
+	return dictArray;
 }
 
-function domainAllowsFraming(url) {
-	var domain = parseUrl(url).domain;
-	var urlParsed = parseUrl(url);
-	var domain = urlParsed.domain;
-	var noFrameDomains = NO_FRAME_DOMAINS;
-	var result = true;
-	for( var numNoFrameDomains=noFrameDomains.length, i=0; i<numNoFrameDomains; i++ ) {
-		var noFrameDomain = noFrameDomains[i];
-		if( noFrameDomain===domain ) {
-			result = false;
-			break;
+function sortInPlaceAlphabetically(items, propertyName) {		
+	items.sort(function(a,b) {
+		var aValue = a[propertyName];
+		var bValue = b[propertyName];
+		
+		// check if property is an array
+		// if so, convert to comma-separated sorted string of values
+		if ($.isArray(aValue)) {
+			aValue = aValue.sort().join(', ');
+			bValue = bValue.sort().join(', ');
 		}
-		else {
-			var pos = domain.lastIndexOf(noFrameDomain);
-			if((pos + noFrameDomain.length == domain.length) && (pos==0 || domain.charAt(pos-1)=="." ) ) {
-				result = false;
-				break;
-			}
-		}
-	}
-	return result;
-}
-
-function getSpecificURLParameter(url, theArgName) {
-	/* Thanks to  Eric Scheid ("ironclad") for this snippet, which was downloaded from ...
-	 * http://www.evolt.org/article/Javascript_to_Parse_URLs_in_the_Browser/17/14435/?format=print
-	 * ... on 4-27-2010 ...
-	 * ... and adapted by Alex Quinn.
-	 */
-
-	var queryString = url.slice(url.indexOf("?"));
-	var sArgs = queryString.slice(1).split('&');
-    var r = '';
-    for (var i = 0; i < sArgs.length; i++) {
-        if (sArgs[i].slice(0,sArgs[i].indexOf('=')) == theArgName) {
-            r = sArgs[i].slice(sArgs[i].indexOf('=')+1);
-            break;
-        }
-    }
-    r = (r.length > 0 ? unescape(r).split(',') : '');
-	if(r.length==1) {
-		r = r[0];
-	}
-	else if(r.length==0) {
-		r = '';
-	}
-	else {
-		// alert("ERROR 5610:  Please tell Alex Quinn at aq@cs.umd.edu.");
-		r = "";
-	}
-	return r;
+			
+		// case insensitive sort
+		var aValue = aValue.toLowerCase();
+		var bValue = bValue.toLowerCase();
+		return (aValue > bValue ? 1 : (aValue < bValue ? -1 : 0));
+	});
 }

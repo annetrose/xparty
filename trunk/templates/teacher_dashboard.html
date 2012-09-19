@@ -25,7 +25,7 @@
           showLessonForm(lessonCode);
        }
        else {
-          createLessonLists(undefined, false); 
+          showLessonLists(undefined, false); 
        }
     }
     // ]]>
@@ -53,7 +53,7 @@
 {% endblock %}
 
 {% block content_area %}
-  <div id="data_display_container">
+  <div id="data_container">
 	<header class="info">
 		<span id="content_title" class="h2"></span>
 		<span id="lesson_filter" style="margin-left:5px"></span>
