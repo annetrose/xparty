@@ -1,20 +1,21 @@
+/*
+# XParty - A Framework for Building Tools for Learning in a Web-Based Classroom
+# Authors: Ben Bederson - www.cs.umd.edu/~bederson
+#          Alex Quinn -- www.alexquinn.org
+#          University of Maryland, Human-Computer Interaction Lab - www.cs.umd.edu/hcil
+# Date: Originally created July 2011
+# License: Apache License 2.0 - http://www.apache.org/licenses/LICENSE-2.0
+*/
+
 var TEACHER_LESSONS = 0;
 var ALL_LESSONS = 1;
 var MAX_NUM_TASKS = 10;
 
-function getLesson(lessonCode) {
-	var lesson = null;
-	for( var i=0,l=g_lessons.length; i<l; i++ ) {
-		var _lesson = g_lessons[i];
-		if( _lesson.lesson_code==lessonCode ) {
-			lesson = _lesson;
-			break;
-		}
-	}
-	return lesson;
-}
+//=================================================================================
+// Lesson Lists UI (active and inactive)
+//=================================================================================
 
-function createLessonLists(teacherFilter, showTeacher) {
+function showLessonLists(teacherFilter, showTeacher) {
     if (teacherFilter==="") teacherFilter = undefined;
     var activeHtml = '';
     var inactiveHtml = '';
@@ -33,13 +34,12 @@ function createLessonLists(teacherFilter, showTeacher) {
                     
     $('#lessons_list_active').accordion('destroy');
     $('#lessons_list_inactive').accordion('destroy');
-      
+
+    $('#content_title').html('Activities');
     var html = '<div id="lessons_list_active" class="accordion2">'+activeHtml+'</div>';
     html += '<br/>';
     html += '<h3>Stopped Activities</h3>';
     html += '<div id="lessons_list_inactive" class="accordion2">'+inactiveHtml+'</div>';  
-    
-    $('#content_title').html('Activities');
     $('#content').html(html); 
         
     if (activeHtml) {
@@ -105,12 +105,9 @@ function getLessonHtml(lesson, showTeacher) {
     html += '<button id="edit_lesson_btn'+lessonCode+'" onclick="showLessonForm(\'' + lessonCode + '\')" class="cssbtn smallest">Edit Activity<span class="edit"></span></button>';
     html += '</li>';
     html += '<li class="left">';
-    if (lesson.is_active) {
-        html += '<button id="stop_lesson_btn_'+lessonCode+'" onclick="stopLesson(\'' + lessonCode + '\')" class="cssbtn smallest">Stop Activity<span class="stop"></span></button>';
-    }
-    else {
-        html += '<button id="start_lesson_btn_'+lessonCode+'" onclick="startLesson(\'' + lessonCode + '\')" class="cssbtn smallest">Start Activity<span class="start"></span></button>';
-    }
+    html += (lesson.is_active) ?
+    	'<button id="stop_lesson_btn_'+lessonCode+'" onclick="stopLesson(\'' + lessonCode + '\')" class="cssbtn smallest">Stop Activity<span class="stop"></span></button>' :
+    	'<button id="start_lesson_btn_'+lessonCode+'" onclick="startLesson(\'' + lessonCode + '\')" class="cssbtn smallest">Start Activity<span class="start"></span></button>';
     html += '</li>';
     html += '<li class="left">';
     html += '<button id="clone_lesson_btn_'+lessonCode+'" onclick="cloneLesson(\'' + lessonCode + '\', true)" class="cssbtn smallest">Clone Activity<span></span></button>';
@@ -131,14 +128,15 @@ function getLessonHtml(lesson, showTeacher) {
     return html;
 }
 
+//=================================================================================
+// Lesson Form UI (create and edit)
+//=================================================================================
+
 function showLessonForm(lessonCode) {
 	// NOTE: Existing data not modified when activity is edited.  Should option to clear data be given?
 
 	var action;
 	var pageTitle, activityName, className, activityDesc;
-	var taskTitles = [];
-	var taskDescs = [];
-	var taskLayouts = [];
 
 	var isNewLesson = lessonCode == undefined || lessonCode == '';
 
@@ -157,17 +155,6 @@ function showLessonForm(lessonCode) {
 		activityName = lesson.title;
 		className = lesson.class_name;
 		activityDesc = lesson.description;
-		
-		for (var i=0; i<lesson.tasks.length; i++) {
-            taskTitles[i] = lesson.tasks[i][0];
-            taskDescs[i] = lesson.tasks[i][1];
-            taskLayouts[i] = lesson.tasks[i][2];
-        }
-		for (var i=lesson.tasks.length; i<MAX_NUM_TASKS; i++) {
-			taskTitles[i] = "";
-            taskDescs[i] = "";
-            taskLayouts[i] = "";
-		}
 	}
 	
     var html = '<form method="post" id="lesson_form" onsubmit="'+action+'" class="wufoo">';
@@ -184,40 +171,23 @@ function showLessonForm(lessonCode) {
     html += '<label class="lesson_description desc">Activity description</label>';
     html += '<textarea rows="4" name="lesson_description" class="field textarea small flwid">'+activityDesc+'</textarea>';
     html += '</li>';
-    html += '</ul>';
-  
+    html += '</ul>';  
     html += '<header class="info"><h3>Tasks</h3></header>';
 	html += '<ul id="tasks">';
-	if (!isNewLesson) {
-		for (var i=1; i<=lesson.tasks.length; i++) {
-			html += '<li id="task">';
-			html += getTaskHtml(i, taskTitles[i-1], taskDescs[i-1], taskLayouts[i-1]);
-			html += '</li>';
-		}
-		updateTasks();
+	if (isNewLesson) {
+		html += getTaskHtml(1, '', '', '');
 	}
 	else {
-		html += '<li id="task">';
-		html += getTaskHtml(1, '', '', '');
-		html += '</li>';	
+		for (var i=1; i<=lesson.tasks.length; i++) {
+			html += getTaskHtml(i, lesson.tasks[i-1][0], lesson.tasks[i-1][1], lesson.tasks[i-1][2]);
+		}
 	}
 	html += '</ul>';
-	html += '<input type="hidden" name="max_num_tasks" value="'+MAX_NUM_TASKS+'">';
-	
-	
-	if (isNewLesson) {
-		html += '<input type="hidden" name="action" value="create">';
-		html += '<input type="hidden" name="lesson_code" value="">';
-		html += '<input type="submit" value="Create Activity" class="cssbtn"></input>&nbsp;&nbsp;'; 
-		html += '<input type="button" value="Cancel" class="cssbtn" onclick="returnToParentPage();"></input>'; 
-	}
-	else {
-		html += '<input type="hidden" name="action" value="edit">';
-		html += '<input type="hidden" name="lesson_code" value="'+lessonCode+'">';
-		html += '<input type="submit" value="Edit Activity" class="cssbtn"></input>&nbsp;&nbsp;'; 
-		html += '<input type="button" value="Cancel" class="cssbtn" onclick="returnToParentPage();"></input>'; 
-	}
-	    
+	html += '<input type="hidden" name="max_num_tasks" value="'+MAX_NUM_TASKS+'">';	
+	html += '<input type="hidden" name="action" value="'+(isNewLesson?'create':'edit')+'">';
+	html += '<input type="hidden" name="lesson_code" value="'+(isNewLesson?'':lessonCode)+'">';
+	html += '<input type="submit" value="'+(isNewLesson?'Create':'Edit')+' Activity" class="cssbtn"></input>&nbsp;&nbsp;'; 
+	html += '<input type="button" value="Cancel" class="cssbtn" onclick="returnToParentPage();"></input>';     
     html += '</form>';
 
     $('#content_title').html(pageTitle);
@@ -227,7 +197,8 @@ function showLessonForm(lessonCode) {
 
 function getTaskHtml(i, title, description, layout) {
     // TODO: Make styling of + and - buttons nicer
-	var html = '<label class="task_title_label desc">Task #'+i+' name</label>';
+	var html = '<li id="task">';
+	html += '<label class="task_title_label desc">Task #'+i+' name</label>';
 	html += '<input type="text" size="50" value="'+title+'" class="task_title field text fn flwid"></input>';
 	html += '<label class="task_description_label desc" style="margin-top:5px">Task #'+i+' description</label>';
 	html += '<textarea class="task_description field textarea smaller flwid">'+description+'</textarea>';
@@ -235,6 +206,7 @@ function getTaskHtml(i, title, description, layout) {
 	html += '<input type="text" size="50" value="'+layout+'" class="task_layout field text fn flwid"></input><br/>';
 	html += '<span class="inline"><a class="task_minus">[-]</a> <a class="task_plus">[+]</a></span>';
 	html += '<br/>';
+	html += '</li>';
 	return html;
 }
 
@@ -297,31 +269,9 @@ function getTaskIndex(id) {
 	return id.substring(id.lastIndexOf("_")+1, id.length);
 }
 
-function goToLessonList() {
-	var currentLocation = ''+window.location;
-	if (currentLocation.indexOf('/teacher_dashboard') == -1) {
-		window.location = '/teacher_dashboard';
-	}
-	else {
-		window.location.hash = '';
-		createLessonLists();
-	}
-}
-
-function goToLessonForm(lessonCode) {
-	var currentLocation = ''+window.location;
-	if (currentLocation.indexOf('/teacher/') != -1) {
-		window.location = '/teacher_dashboard#' + lessonCode + ':1';
-	}
-	else {
-		window.location.hash = lessonCode;
-		showLessonForm(lessonCode);
-	}
-}
-
-function goToLesson(lessonCode) {
-	window.location = "/teacher/" + lessonCode;
-}
+//=================================================================================
+// Lessons Actions
+//=================================================================================
 
 function createEditLesson(lessonCode) {
 	$.ajax( "/teacher_dashboard", {
@@ -342,48 +292,8 @@ function createEditLesson(lessonCode) {
 	});
 }
 
-function returnToParentPage() {		
-	var hash = window.location.hash;
-	if (hash != '') hash = hash.substring(1);
-	var hashTokens = hash.split(':');
-	if (hashTokens.length>1 && hashTokens[1]=='1') {
-		var lessonCode = hashTokens[0];
-		goToLesson(lessonCode);
-	}
-	else {
-		goToLessonList();
-	}
-}
-
-function cloneLesson(lessonCode, updateLessons) {
-	var lesson = getLesson(lessonCode);
-	$.ajax( "/teacher_dashboard", {
-		async: false,
-		data: {
-			action: "clone",
-			lesson_code: lessonCode,
-		},
-		dataType: 'json',
-		success: function(data) {
-			var clonedLesson = data[0];
-			if (updateLessons) {
-				g_lessons.push(clonedLesson);
-				if (typeof updateUI == 'function') {
-					updateUI();
-				}
-			}
-			var msg = lesson.title + ' has been cloned.<br/>';
-			msg += '<a href="/teacher/'+clonedLesson.lesson_code+'#students">View clone activity</a>';
-			showMessageDialog(msg);
-		},
-		error: function(jqXHR, textStatus, errorThrown) {
-			alert('Error: Clone was not successful.');
-		} 
-	});
-}
-
 function startLesson(lessonCode) {
-	$.ajax( "/teacher_dashboard", {
+	$.ajax("/teacher_dashboard", {
 			async: false,
 			data: {
 				action: "start",
@@ -468,34 +378,30 @@ function stopAllLessons() {
 	});
 }
 
-function clearLesson(lessonCode, showDialog) {
+function cloneLesson(lessonCode, updateLessons) {
 	var lesson = getLesson(lessonCode);
-	$.ajax("/teacher_dashboard", {
-			async: false,
-			data: {
-				action: "clear",
-				lesson_code: lessonCode
-			},
-			success: function(data,textStatus,jqXHR) {
-				if (data.trim()=="OK") {
-					g_students = {};
-					if (typeof updateData == 'function') {
-						updateData();
-					}
-					if (typeof updateUI == 'function') {
-					   updateUI();
-					}
-					if (showDialog) {
-					    showMessageDialog('All student data has been cleared from activity '+ lessonCode);
-					}
+	$.ajax( "/teacher_dashboard", {
+		async: false,
+		data: {
+			action: "clone",
+			lesson_code: lessonCode,
+		},
+		dataType: 'json',
+		success: function(data) {
+			var clonedLesson = data[0];
+			if (updateLessons) {
+				g_lessons.push(clonedLesson);
+				if (typeof updateUI == 'function') {
+					updateUI();
 				}
-				else {
-					alert(data);
-				}
-			},
-			error: function(jqXHR, textStatus, errorThrown) {
-				alert(textStatus);
 			}
+			var msg = lesson.title + ' has been cloned.<br/>';
+			msg += '<a href="/teacher/'+clonedLesson.lesson_code+'#students">View clone activity</a>';
+			showMessageDialog(msg);
+		},
+		error: function(jqXHR, textStatus, errorThrown) {
+			alert('Error: Clone was not successful.');
+		} 
 	});
 }
 
@@ -574,6 +480,37 @@ function downloadAllLessons() {
 	alert('Not implemented yet');
 }
 
+function clearLesson(lessonCode, showDialog) {
+	var lesson = getLesson(lessonCode);
+	$.ajax("/teacher_dashboard", {
+			async: false,
+			data: {
+				action: "clear",
+				lesson_code: lessonCode
+			},
+			success: function(data,textStatus,jqXHR) {
+				if (data.trim()=="OK") {
+					g_students = {};
+					if (typeof updateData == 'function') {
+						updateData();
+					}
+					if (typeof updateUI == 'function') {
+					   updateUI();
+					}
+					if (showDialog) {
+					    showMessageDialog('All student data has been cleared from activity '+ lessonCode);
+					}
+				}
+				else {
+					alert(data);
+				}
+			},
+			error: function(jqXHR, textStatus, errorThrown) {
+				alert(textStatus);
+			}
+	});
+}
+
 function logoutStudent(studentNickname, lessonCode) {
 	$.ajax("/teacher_dashboard", {
 		async: false,
@@ -630,16 +567,86 @@ function logoutAllStudents(warning, lessonCode, whichLessons) {
     });
 }
 
-function showMessageDialog(msg) {
-	showMessageDialogWithOptions(msg, 300);
+//=================================================================================
+// Navigation
+//=================================================================================
+
+function goToLessonLists() {
+	var currentLocation = ''+window.location;
+	if (currentLocation.indexOf('/teacher_dashboard') == -1) {
+		window.location = '/teacher_dashboard';
+	}
+	else {
+		window.location.hash = '';
+		showLessonLists();
+	}
 }
 
-function showMessageDialogWithOptions(msg, width) {
+function goToLessonForm(lessonCode) {
+	var currentLocation = ''+window.location;
+	if (currentLocation.indexOf('/teacher/') != -1) {
+		window.location = '/teacher_dashboard#' + lessonCode + ':1';
+	}
+	else {
+		window.location.hash = lessonCode;
+		showLessonForm(lessonCode);
+	}
+}
+
+function goToLesson(lessonCode) {
+	window.location = "/teacher/" + lessonCode;
+}
+
+function returnToParentPage() {		
+	var hash = window.location.hash;
+	if (hash != '') hash = hash.substring(1);
+	var hashTokens = hash.split(':');
+	if (hashTokens.length>1 && hashTokens[1]=='1') {
+		var lessonCode = hashTokens[0];
+		goToLesson(lessonCode);
+	}
+	else {
+		goToLessonLists();
+	}
+}
+
+//=================================================================================
+// Utils
+//=================================================================================
+
+function getLesson(lessonCode) {
+	var lesson = null;
+	for (var i=0; i<g_lessons.length; i++ ) {
+		if (g_lessons[i].lesson_code==lessonCode ) {
+			lesson = g_lessons[i];
+			break;
+		}
+	}
+	return lesson;
+}
+
+function getStudentCount() {
+	return g_students ? Object.keys(g_students).length : 0;
+}
+
+function getLoggedInStudentCount() {
+	var numStudents = 0;
+	if (g_students) {
+		for(var student_nickname in g_students) {
+			if (g_students[student_nickname].logged_in) {
+				numStudents++;
+			}
+		}
+	}
+	return numStudents;
+}
+
+function showMessageDialog(msg) {
 	$('#message').html('<p>'+msg+'</p>');
     $('#message').dialog({
         autoOpen: true,
         modal: true,
-        width: width,
+        width: 300,
         buttons: {
             OK: function() {
                 $(this).dialog("close");

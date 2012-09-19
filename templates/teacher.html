@@ -4,30 +4,19 @@
 {% block head %}
   <title>XParty - Teacher View</title>
   <link rel="stylesheet" type="text/css" href="/css/task_chooser.css"></link>
-  <script type="text/javascript" src="https://www.google.com/jsapi"></script>
-  <script type="text/javascript" src="/js/common.js"></script>
-  <script type="text/javascript" src="/js/stemmer_snowball.js"></script>{# must come before teacher.js #}
-  <script type="text/javascript" src="/js/teacher.js?version=072512"></script>
-  <script type="text/javascript" src="/js/lesson.js?version=072512"></script>
+  <script type="text/javascript" src="/js/common.js?version=091812"></script>
+  <script type="text/javascript" src="/js/lesson.js?version=091812"></script>
+  <script type="text/javascript" src="/js/teacher.js?version=091812"></script>
   <script type="text/javascript" src="/js/task_chooser.js"></script>
-  <script type="text/javascript" src="/js/jquery.tagcloud.js"></script>
   
   <script type="text/javascript">
   // <![CDATA[
-    {# Yes, variables declared here with var will be visible to code running in teacher.js.  Checked 10-13-2011. #}
     var TOKEN = "{{ token }}";
-    var START_PANE = window.location.hash.substr(1) || "{{ default_start_pane }}";
-    {{ lesson|init_lesson_js }}
-    var g_lesson_code = g_lessons[0].lesson_code;
-    
+    {{ lesson|init_lesson_js }}    
     {{ students|init_students_js }}
-    
-    // Load the visualization API and the corechart package
-    google.load('visualization', '1.1', {'packages':['corechart', 'controls']});
-    google.setOnLoadCallback(loadUIData);
-    
+                
     $(document).ready(function() { 
-       $(initializeTeacher);
+       initializeTeacher();
     });
         
   // ]]
@@ -46,25 +35,19 @@
 {% endblock %}
 
 {% block side_panel_lower %}
-  <div id="side_button_bar">
-    <button class="load_btn cssbtn" id="load_students_btn" onclick="loadPane('students')">Students</button><br/>
-    <button class="load_btn cssbtn" id="load_history_btn" onclick="loadPane('complete')">Complete History</button><br/>
-  </div>
-  
+  <div id="side_button_bar"></div>
   <div id="side_button_bar2"></div>
-    
   <p># students logged in: <span id="num_students">0</span></p>
-
 {% endblock %}
 
 {% block content_area %}
-  <div id="data_display_container">
+  <div id="data_container">
 	<header class="info">
 		<h2>Activity <span id="inactive" style="color:red; text-transform:uppercase; display:none" class="small">Inactive</span></h2>
 		<h5 id="lesson_title"></h5>
 		<h6>Activity code: <span id="lesson_code"></span></h6>
 	</header>
 	<br/>
-    <div id="data_display_content"></div>
+    <div id="data_pane"></div>
   </div>
 {% endblock %}

@@ -61,7 +61,10 @@ function openChannel() {
 function onSocketOpen() {
 }
 
-function onSocketMessage(msg) {    
+function onSocketMessage(msg) {
+	// Note:  Messages are limited to 32K.  
+	// http://code.google.com/appengine/docs/python/channel/overview.html
+	
 	var updates = JSON.parse(msg.data);
 	var num_updates = updates.length;
 	for (var i=0; i<num_updates; i++) {

@@ -26,14 +26,12 @@ class TeacherPage(XPartyRequestHandler):
             teacher = self.person
             person_key = teacher.user.user_id();
             token = self.create_channel(person_key=person_key, lesson_code=lesson_code)
-            default_start_pane = "students"
 
             template_values = {
                 'header'             : self.gen_header("teacher"),
                 'token'              : token,
                 'lesson'             : lesson,
                 'students'           : self.get_students(lesson),
-                'default_start_pane' : default_start_pane,
             }
 
             if self.session.has_key('msg'):

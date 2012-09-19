@@ -54,7 +54,6 @@ h6,.h6 {font-size:16px; font-size: 1.6rem; margin:0 0 .4rem 0;}
 .cntrbody .grid_5 {display:block;}	
 	
 /* ------------Accordion---------------------------------------------------------------- */
-#data_display_container h4 {margin-bottom:20px;}
 /* from: jQuery UI CSS Framework 1.8.14*/
 /* Layout helpers -----*/
 .ui-helper-hidden { display: none; }
@@ -209,16 +208,16 @@ h3 { } #lesson_code { font-weight: bold; }
 
 /******** SCHEME5 ********/
 
-#data_display_container { margin: 0px; padding: 0px; }
-#data_display_content, #content { margin: 0 0 0 5px; padding: 0px; } 
-#data_display_content ol { list-style-type: none; padding-left: 0px; }
-.data_display_item { font-size: 13px; font-size:1.3rem; line-height:1.6em; margin: 0 0 0 2%; }
-.data_display_item span img { vertical-align: middle;margin-top: -2px; }
-.data_display_item:hover { cursor: pointer; } 
-.data_display_item:hover { background-color: #E4E2D9; }
+#data_container { margin: 0px; padding: 0px; }
+#data_container h4 { margin-bottom: 20px; }
+#data_pane, #content { margin: 0 0 0 5px; padding: 0px; } 
+#data_pane ol { list-style-type: none; padding-left: 0px; }
+.data_item { font-size: 13px; font-size:1.3rem; line-height:1.6em; margin: 0 0 0 2%; }
+.data_item span img { vertical-align: middle;margin-top: -2px; }
+.data_item { cursor: pointer; } 
+.data_item { background-color: #E4E2D9; }
 .studentLoggedOut { color: #888888; } 
 .studentLoggedIn { color: #000000; }
-#data_dump_link_container { text-align: center; margin-top: 48px; }
 
 .display_options { font-size:13px; font-size:1.3rem, line-height: 1.6em; margin-top:5px; width:100%; }
 table.task_history { font-size:13px; font-size:1.3rem; line-height:1.6em; margin:0 0 0 2%; table-layout:fixed; width:100%; }

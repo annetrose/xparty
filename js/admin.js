@@ -1,3 +1,12 @@
+/*
+# XParty - A Framework for Building Tools for Learning in a Web-Based Classroom
+# Authors: Ben Bederson - www.cs.umd.edu/~bederson
+#          Alex Quinn -- www.alexquinn.org
+#          University of Maryland, Human-Computer Interaction Lab - www.cs.umd.edu/hcil
+# Date: Originally created July 2011
+# License: Apache License 2.0 - http://www.apache.org/licenses/LICENSE-2.0
+*/
+
 function updateValues() {
 	$('#message').html("<p>Are you sure you want to update values in datastore?</p>")
 	$('#message').dialog({
@@ -31,35 +40,4 @@ function updateValues() {
           }
         }
     });
-}
-
-function createTeacherFilter(teacherName) {
-    var teachers = getTeachers();
-    if (teachers.length>0) {
-        var html = '<select id="teacher_filter">';
-        html += '<option value="">All Teachers</option>';
-        for (var i=0; i<teachers.length; i++) {
-        	var selected = '';
-        	if (teacherName!=undefined && teachers[i]==teacherName) {
-        		selected = 'selected="selected"';
-        	}
-            html += '<option value="'+teachers[i]+'" '+selected+'>'+teachers[i]+'</option>';
-        }
-        html += '</select>';
-        $('#lesson_filter').html(html);
-    }
-}
-
-function getTeachers() {	
-    var teachers = [];
-    for (var i=0; i<g_lessons.length; i++) {
-        var lesson = g_lessons[i];
-        var teacherName = lesson.teacher_name;
-        if (teacherName && $.inArray(teacherName, teachers)==-1) {
-            teachers.push(teacherName);
-        }
-    }
-    
-    teachers.sort();
-    return teachers;
 }
