@@ -5,16 +5,6 @@
 #		  University of Maryland, Human-Computer Interaction Lab - www.cs.umd.edu/hcil
 # Date: Originally created July 2011
 # License: Apache License 2.0 - http://www.apache.org/licenses/LICENSE-2.0
-
-def get_student_activities(student, lesson, task_idx):
-	from model import StudentActivity, EXPECTED_UPPER_BOUND
-	query = StudentActivity.all()
-	query = query.filter('student =', student).filter('lesson =', lesson).filter('task_idx =', task_idx)
-	query.order('timestamp')
-	activities = []
-	for activity in query.fetch(EXPECTED_UPPER_BOUND):
-		activities.append(activity.toDict())
-	return activities
 	
 def calc_since_time(since_str):
 	from datetime import datetime, timedelta, MINYEAR

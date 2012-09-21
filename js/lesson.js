@@ -632,7 +632,7 @@ function getStudentCount() {
 function getLoggedInStudentCount() {
 	var numStudents = 0;
 	if (g_students) {
-		for(var student_nickname in g_students) {
+		for (var student_nickname in g_students) {
 			if (g_students[student_nickname].logged_in) {
 				numStudents++;
 			}

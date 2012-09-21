@@ -20,3 +20,9 @@ def init_student_js(student):
     students = []
     students.append(student)
     return template.render('customtags/student_js.html', { 'students' : students })
+
+@register.filter
+def init_task_histories_js(histories):
+    return template.render('customtags/task_history_js.html', { 'task_histories' : histories })
+
+    

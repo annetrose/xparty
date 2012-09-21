@@ -13,8 +13,8 @@
   <script type="text/javascript">
   // <![CDATA[
     var TOKEN = "{{ token }}";
-    var g_lessons = {{ lesson_json|safe }};{# g_lessons is an array of length 1; an array is used since array used by functions in lesson.js #}
-    var g_student_info = {{ student_json|safe }};
+    {{ lesson|init_lesson_js }}    
+    {{ student|init_student_js }}
 
     $(document).ready(function() {
         initializeStudent();

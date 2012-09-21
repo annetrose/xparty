@@ -20,13 +20,11 @@ class StudentPage(XPartyRequestHandler):
             student = self.person
             token = self.create_channel(person_key=student.nickname, lesson_code=student.lesson.lesson_code)
               
-            template_values = {
+            template_values = {               
                 'header'        : self.gen_header("student"),
                 'token'         : token,
-                'nickname'      : student.nickname,
-                'student_json'  : student.getJson(True),
+                'student'       : student,
                 'lesson'        : student.lesson,
-                'lesson_json'   : student.lesson.getJson(),
             }
             if self.session.has_key('msg'):
                 template_values['msg'] = self.session.pop('msg')  # only show the message once
