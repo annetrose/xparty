@@ -73,8 +73,9 @@ function onSocketMessage(msg) {
 			// TODO: handle activity messages
 			case "xx":
 				var taskHistory = g_student_info.task_history[update.task_idx];
-				//taskHistory.push(xx);
+				taskHistory.push(update.data);
 				if (update.task_idx == selectedTaskIdx()) {
+					alert('TODO: update gui')
 					// update gui
 				}
 				break;
@@ -120,10 +121,8 @@ function onSendMessage(msg) {
 		url: '/send_message', 
 		dataType: 'json',
 		data: {
+			task_idx : selectedTaskIdx(),
 			msg : msg,
-			student_nickname : g_student_info.nickname,
-			lesson_code : g_lessons[0].lesson_code,
-			task_idx : selectedTaskIdx(),	
 		},
 		cache: false,
 		success: function(data) {

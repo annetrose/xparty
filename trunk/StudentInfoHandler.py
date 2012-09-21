@@ -14,7 +14,7 @@ class StudentInfoHandler(XPartyRequestHandler):
         self.load_xparty_context(user_type="student")
         
         if self.is_student and self.person.is_logged_in:
-            import helpers
+            from model import get_task_activities
             student = self.person
             task_idx = int(self.request.get("task_idx", 0))
             response_data = { 
@@ -22,7 +22,7 @@ class StudentInfoHandler(XPartyRequestHandler):
                 "student_nickname": student.nickname, 
                 "anonymous": student.anonymous,
                 "lesson": student.lesson.toDict(), 
-                "history": helpers.get_student_activities(student, student.lesson, task_idx)
+                "history": get_task_activities(student.lesson, task_idx, student)
             }            
         else:
             response_data = { "status":0, "msg":"Student not logged in" }

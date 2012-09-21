@@ -10,17 +10,34 @@ from XPartyRequestHandler import XPartyRequestHandler
 
 class MessageHandler(XPartyRequestHandler):
     def post(self):
+        import json
         self.load_xparty_context(user_type="unknown")
         if self.is_student:
-            from updates import send_message_to_teacher
             student = self.person
             teacher = student.lesson.teacher
-            msg = self.request.get("msg")                
-            send_message_to_teacher(student=student, teacher=teacher, msg=msg)      
+            task_idx = int(self.request.get("task_idx", 0))
+            msg = self.request.get("msg", "")  
+
+            from model import jsonHandler
+            activity_type = "message"
+            activity_data = { "description":msg, "msg":msg }
+            activity_data_json = json.dumps(activity_data, default=jsonHandler)
+                        
+            from model import StudentActivity
+            activity = StudentActivity(
+                student = student,
+                lesson = student.lesson,
+                task_idx = task_idx,
+                activity_type = activity_type,
+                activity_data_json = activity_data_json
+            )
+            activity.put()
+             
+            from updates import send_student_activity
+            send_student_activity(student=student, teacher=teacher, task_idx=task_idx, activity_type=activity_type, activity_data=activity_data)      
             response_data = { "status": 1 }
         else:
-            response_data = { "status": -1, "msg": "Message from teachers not handled yet"}
+            response_data = { "status": -1, "msg": "Student not logged in"}
          
-        import json
         self.response.headers.add_header('Content-Type', 'application/json', charset='utf-8')
         self.response.out.write(json.dumps(response_data))

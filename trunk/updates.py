@@ -31,25 +31,22 @@ def _send_update(from_person, to_person, *updates):
         log("=> MESSAGE NOT SENT. No current client IDs for {0}.".format(to_person))
     
     for client_id in client_ids:
-        log( "client ID : %r : sent %s"%(client_id," + ".join(u["type"] for u in updates)) )
+        log( "client ID : %r : sent %s"%(client_id," + ".join(u["activity_type"] for u in updates)) )
         channel.send_message(client_id, updates_json)
 
 def send_update_log_in(student, teacher):
-    update = {"type":"log_in", "student_nickname":student.nickname, "lesson_code":student.lesson.lesson_code }
+    update = {"student_nickname":student.nickname, "lesson_code":student.lesson.lesson_code, "activity_type":"log_in", "activity_data":{} }
     _send_update(student, teacher, update)
 
 def send_update_log_out(student, teacher):
-    update = {"type":"log_out", "student_nickname":student.nickname, "lesson_code":student.lesson.lesson_code }
+    update = {"student_nickname":student.nickname, "lesson_code":student.lesson.lesson_code, "activity_type":"log_out", "activity_data":{} }
     _send_update(student, teacher, update)
 
 def send_update_task(student, teacher, task_idx):
-    update = {"type":"task", "student_nickname":student.nickname, "lesson_code":student.lesson.lesson_code, "task_idx":task_idx}
+    update = {"student_nickname":student.nickname, "lesson_code":student.lesson.lesson_code, "activity_type":"task", "activity_data":{"task_idx":task_idx}  }
     _send_update(student, teacher, update)
     
-def send_message_to_teacher(student, teacher, msg):
-    update = {"type":"message", "student_nickname":student.nickname, "lesson_code":student.lesson.lesson_code, "msg":msg }
+def send_student_activity(student, teacher, task_idx, activity_type, activity_data):
+    activity_data["task_idx"] = task_idx;
+    update = {"student_nickname":student.nickname, "lesson_code":student.lesson.lesson_code, "activity_type":activity_type, "activity_data":activity_data }
     _send_update(student, teacher, update)
-        
-def send_error(to_person, msg):
-    for client_id in to_person.client_ids:
-        channel.send_message(client_id, json.dumps({"type":"error", "msg":msg}))

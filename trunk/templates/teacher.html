@@ -14,6 +14,7 @@
     var TOKEN = "{{ token }}";
     {{ lesson|init_lesson_js }}    
     {{ students|init_students_js }}
+    {{ task_histories|init_task_histories_js }}
                 
     $(document).ready(function() { 
        initializeTeacher();

@@ -10,14 +10,10 @@ from XPartyRequestHandler import XPartyRequestHandler
 
 class TaskChangedHandler(XPartyRequestHandler):
     def post(self):
-        from helpers import log
-        from updates import send_update_task
-
         self.load_xparty_context(user_type="student")
-        
         if self.is_student:
             student = self.person
             teacher = student.lesson.teacher
             task_idx = int(self.request.get("task_idx"))                
-            log( "TaskChangedHandler:  task_idx=%r"%task_idx )
+            from updates import send_update_task
             send_update_task(student=student, teacher=teacher, task_idx=task_idx)

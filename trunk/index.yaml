@@ -34,3 +34,8 @@ indexes:
   - name: task_idx
   - name: timestamp
     direction: desc
+
+- kind: StudentActivity
+  properties:
+  - name: lesson
+  - name: timestamp

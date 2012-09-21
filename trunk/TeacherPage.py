@@ -27,11 +27,13 @@ class TeacherPage(XPartyRequestHandler):
             person_key = teacher.user.user_id();
             token = self.create_channel(person_key=person_key, lesson_code=lesson_code)
 
+            from model import get_lesson_activities
             template_values = {
                 'header'             : self.gen_header("teacher"),
                 'token'              : token,
                 'lesson'             : lesson,
                 'students'           : self.get_students(lesson),
+                'task_histories'     : get_lesson_activities(lesson=lesson, asJson=True)
             }
 
             if self.session.has_key('msg'):
@@ -50,4 +52,4 @@ class TeacherPage(XPartyRequestHandler):
 
 class WrongTeacherError(Exception): pass
 class LessonNotFoundError(Exception): pass
-class NotAnAuthenticatedTeacherError(Exception): pass
+class NotAnAuthenticatedTeacherError(Exception): pass   
