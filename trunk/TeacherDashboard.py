@@ -117,7 +117,8 @@ class TeacherDashboard(XPartyRequestHandler):
             for lesson in self.get_lessons():
                 if not lesson.is_deleted:
                     lesson_infos.append(lesson.toDict())
-            lessons_json = json.dumps(lesson_infos, default=lesson.jsonHandler)
+            from model import jsonHandler
+            lessons_json = json.dumps(lesson_infos, default=jsonHandler)
             self.response.out.write(lessons_json)
         
         else:
