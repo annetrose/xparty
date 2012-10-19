@@ -1,0 +1,39 @@
+{% extends "task_side_panel_layout.html" %}
+{# vim: set sw=2 ts=2 expandtab: #}
+
+{% block head %}
+  <title>XParty - Student Browser</title>
+  <link rel="stylesheet" type="text/css" href="http://www.google.com/cse/style/look/default.css" />
+  <link rel="stylesheet" type="text/css" href="/css/task_chooser.css"></link>
+
+  <script type="text/javascript" src="/js/common.js"></script>
+  <script type="text/javascript" src="/js/student.js?version=072512"></script>
+  <script type="text/javascript" src="/js/task_chooser.js"></script>
+  
+  <script type="text/javascript">
+  // <![CDATA[
+    var TOKEN = "{{ token }}";
+    {{ lesson|init_lesson_js }}    
+    {{ student|init_student_js }}
+
+    $(document).ready(function() {
+        initializeStudent();
+    });
+  // ]]>
+  </script>
+{% endblock %}
+
+{% block top %}
+  <div class="container_16 cntrmain">
+    <div class="grid_16 branding">
+        {% include "header.html" %}
+        <div id="status_header"></div>
+       <div class="clear"></div>
+    </div><!--- end grid_16 -->
+  </div><!-- end container_16 -->
+{% endblock %}
+
+{% block content_area %}
+  <h3 style="margin-bottom:10px;"><span id="lesson_title"></span>&nbsp;&nbsp;<span class="small" style="font-weight:normal; color:grey">#<span id="lesson_code"></span></span></h3>
+  <div id="task_area"></div>
+{% endblock %}
