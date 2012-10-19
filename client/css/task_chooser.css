@@ -1,0 +1,7 @@
+.task_description {
+	display: none;
+}
+.task_description.selected {
+	display: block;
+}
+
