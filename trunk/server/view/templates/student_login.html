@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{# vim: set sw=2 ts=2 expandtab: #}
+
+{% block head %} 
+<title>XParty - Student Login</title>
+
+<script type="text/javascript">
+// <![CDATA[
+    $(document).ready(function() {
+        $(".login_box").keyup(function(event) {
+            if (event.which == 13) {   // Enter key
+                login(event);
+            }    
+        });
+       
+        $('#login_button').click(function(event) {
+            login(event);
+        });
+    });
+
+    function login(event) {
+        $.post("/student_login_handler", 
+            {
+                "lesson_code": $("#activity_code").val(),
+                "student_nickname": $("#student_nickname").val()
+            }, 
+            login_callback, 'json');
+    }
+
+    function login_callback(data) {
+        if (data['status'] == 1) {
+            window.location.replace("/student");
+        }
+        else {
+            $('#msg').html(data['msg']);
+        }
+    }  
+// ]]>
+</script>  
+{% endblock %}
+
+{% block body %} 
+<div class="container_16 cntrmain">
+    <div class="grid_16 branding">
+        {% include "header.html" %}
+        <div class="clear"></div>
+    </div>
+</div>
+
+<div class="container_16">
+    <div class="grid_16 main">
+        <header class="info">
+            <h2>Student login</h2>
+        </header>
+        <div id="content">
+            <form>
+            <ul>
+            <li>
+            <label class="desc">Student name:</label>
+			<input type="text" id="student_nickname" value="" class="login_box field text fn"><br/>
+		    <span class="note">Leave empty to login anonymously</span>
+            </li>
+            <li>
+            <label class="desc">Activity code:</label>
+            <input type="text" id="activity_code" value="" class="login_box field text fn">
+            </li>
+            <li>
+            <input type="button" id="login_button" value="Login" class="cssbtn">
+            </li>
+            </ul>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

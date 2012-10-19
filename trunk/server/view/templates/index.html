@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{# vim: set sw=2 ts=2 expandtab: #}
+
+{% block head %}
+    <title>XParty</title>
+{% endblock %}
+
+{% block body %}
+<div class="container_16 cntrmain">
+    <div class="grid_16 branding">
+        {% include "header.html" %}
+        <div class="clear"></div>
+     </div>
+</div>
+    
+<div class="container_16">
+    <div class="grid_16 main">
+        <div id="content">
+            <p>XParty is a research effort of <a href="http://www.cs.umd.edu/~bederson">Ben Bederson</a>, 
+            <a href="http://alexquinn.org">Alex Quinn</a>, and <a href="http://www.cs.umd.edu/hcil/members/arose">Anne Rose</a> 
+            at the University of Maryland's <a href="http://www.cs.umd.edu/hcil">Human-Computer Interaction Lab</a> 
+            to help people build tools for learning in a web-based classroom.</p>
+
+            <p>This is very much a work in progress, and we welcome all comments. Please send comments to Ben Bederson 
+            whose email is his last name at gmail.com.</p>
+
+            <p>Funded in part by Google.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

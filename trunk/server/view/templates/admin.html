@@ -1,0 +1,36 @@
+{% extends "side_navigation_layout.html" %}
+{# vim: set sw=2 ts=2 expandtab: #}
+
+{% block head %}
+  <title>XParty - Admin</title>
+  <script type="text/javascript" src="/js/common.js"></script>
+  <script type="text/javascript" src="/js/lesson.js?version=072512"></script>
+  <script type="text/javascript" src="/js/admin.js?version=072512"></script>
+{% endblock %}
+
+{% block top %}
+<div class="container_16 cntrmain">
+  <div class="grid_16 branding">
+      {{ header|safe }}
+      <div class="clear"></div>
+  </div><!--- end grid_16 -->
+</div><!-- end container_16 -->
+{% endblock %}
+
+{% block side_panel %}
+{% endblock %}
+
+{% block content_area %}
+  <div id="data_container">
+	<header class="info">
+	       <h3>Admin Area</h3>    
+	</header>
+    <div id="content">
+        <button class="cssbtn" id="logout_students_btn" onclick="logoutAllStudents('Do you wish to logout all students from all teacher activities?', undefined, ALL_LESSONS); return false;">Logout All Students</button><br/>
+        <!--<button class="cssbtn" id="update_values_btn" onclick="updateValues(); return false;">Update Values</button>-->
+    </div>
+  </div>
+{% endblock %}
+
+{% block bottom %}
+{% endblock %}
