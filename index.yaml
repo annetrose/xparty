@@ -12,6 +12,12 @@ indexes:
 
 - kind: Lesson
   properties:
+  - name: deleted_time
+  - name: teacher
+  - name: title
+
+- kind: Lesson
+  properties:
   - name: teacher
   - name: title
 
@@ -19,6 +25,18 @@ indexes:
   properties:
   - name: lesson
   - name: nickname
+
+- kind: StudentAction
+  properties:
+  - name: lesson
+  - name: student
+  - name: task_idx
+  - name: timestamp
+
+- kind: StudentAction
+  properties:
+  - name: lesson
+  - name: timestamp
 
 - kind: StudentActivity
   properties:

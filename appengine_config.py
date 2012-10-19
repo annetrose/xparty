@@ -1,4 +1,4 @@
-# XParty - A Framework for Building Tools for Learning in a Web-Based Classroom
+# XParty - A Framework for Building Tools to Support Social Learning in Synchronous Environments
 # Authors: Ben Bederson - www.cs.umd.edu/~bederson
 #          Alex Quinn - www.cs.umd.edu/~aq
 #          Anne Rose - www.cs.umd.edu/hcil/members/~arose
@@ -21,7 +21,7 @@ COOKIE_KEY = '1fedb8b8ea2f341b86eb5d8c15241d41c4b9d9776b96337cf927598eb1dda7fc5d
 #use_library('django', '1.2')
 
 def webapp_add_wsgi_middleware(app):
-	from gaesessions import SessionMiddleware
+	from server.lib.gaesessions import SessionMiddleware
 	from google.appengine.ext.appstats import recording
 	app = SessionMiddleware(app, cookie_key=COOKIE_KEY)
 	app = recording.appstats_wsgi_middleware(app)

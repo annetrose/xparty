@@ -19,22 +19,23 @@ handlers:
   login: admin
 
 - url: /css
-  static_dir: css
+  static_dir: client/css
   
 - url: /imgs
-  static_dir: imgs
+  static_dir: client/imgs
 
 - url: /js
-  static_dir: js
+  static_dir: client/js
 
 - url: /html
-  static_dir: html
-  
-- url: .*
-  script: main.py
+  static_dir: client/html
  
-#builtins:
-#- appstats: on
+- url: /cron/students_timeout
+  script: server/cron/StudentsTimeoutHandler.py
+  login: admin
+ 
+- url: .*
+  script: server/main.py
 
 threadsafe: false
 
@@ -44,26 +45,9 @@ skip_files:
 - ^(.*/)?app\.yml
 - ^(.*/)?index\.yaml
 - ^(.*/)?index\.yml
+- ^(.*/)?.*\.py[co]
 - ^(.*/)?#.*#
 - ^(.*/)?.*~
-- ^(.*/)?.*\.py[co]
-- ^(.*/)?.*/RCS/.*
 - ^(.*/)?\..*
-- ^(.*/)?.*\.zip$
-- ^(.*/)?.*\.swp$
-- ^(.*/)?.*\.swo$
-- ^(.*/)?.*\.pptx$
-- ^(.*/)?.*\.ppt$
-- ^(.*/)?.*\.bat$
-- ^(.*/)?.*\.txt$
-- ^(.*[^a-zA-Z])?delme[^a-zA-Z].*
-- ^(.*/)?js/graph/.*\.html$
-# Specific files to ignore
-- ^(.*/)?js/graph/example\.js$
 # Directories to ignore
-- ^(.*/)?junk/.+
-- ^(.*/)?scripts/.+
-- ^(.*/)?backup/.+
-- ^(.*/)?doc/.+
-- ^(.*/)?templatetags/.*
 - ^(.*/)?\.svn/.*
