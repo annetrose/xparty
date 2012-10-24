@@ -9,11 +9,13 @@
 from XPartyHandler import XPartyHandler
 from server import model_access
 from server.lib import gaesessions
+from google.appengine.api import users
 from webapp2_extras.users import login_required
 
 class TeacherLoginHandler(XPartyHandler):
     @login_required
-    def get(self):  
+    def get(self): 
+        google_user = users.get_current_user()  # authenticated Google user
         self.init_user_context("teacher")
       
         # Close any active session the user has since s/he is trying to login
@@ -23,7 +25,7 @@ class TeacherLoginHandler(XPartyHandler):
 
         # Get the teacher's record
         if not model_access.is_teacher_logged_in(self.user):
-            self.user = model_access.create_teacher(self.user)
+            self.user = model_access.create_teacher(google_user)
 
         # Create a new session ID, for added security.
         session.regenerate_id()

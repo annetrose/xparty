@@ -34,12 +34,12 @@ class XPartyView(webapp2.RequestHandler):
                 template = custom_template
         return template;
                                
-    def write_response_with_template(self, template_filename, custom_template_vals=None, custom=False):
+    def write_response_with_template(self, template_filename, more_template_vals=None, custom=False):
         template_vals = self._init_template_values()
-        if custom_template_vals is not None:
-            template_vals = dict(template_vals.items() + custom_template_vals.items())
-        template_subdir = "custom" if custom else ""
-        template_filename = os.path.join(os.path.dirname(templates.__file__), template_subdir, template_filename)
+        if more_template_vals is not None:
+            template_vals = dict(template_vals.items() + more_template_vals.items())
+        template_dir = os.path.dirname(custom_templates.__file__) if custom else os.path.dirname(templates.__file__)
+        template_filename = os.path.join(template_dir, template_filename)
         html = template.render(template_filename, template_vals)    
         self.response.out.write(html)
         

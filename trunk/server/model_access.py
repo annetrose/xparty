@@ -104,7 +104,7 @@ def get_teachers():
 
 def create_teacher(user):
     # key is user ID of authenticated Google user
-    teacher = Teacher(key_name=_get_teacher_id(user)) 
+    teacher = Teacher(key_name=user.user_id()) 
     teacher.user = user
     teacher.put()
     return teacher
