@@ -25,3 +25,8 @@ function selectedTaskIdx() {
 function numberOfTasks() {
 	return $("#task_chooser").get(0).childNodes.length;
 }
+
+function changeSelectedTask(value) {
+	var option = $("#task_chooser").find("option[value="+value+"]");
+	$("#task_chooser").selectbox("change", option.attr('value'), option.text() );
+}

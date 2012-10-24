@@ -9,6 +9,7 @@
 from XPartyHandler import XPartyHandler
 from server import exceptions
 from server import model_access
+from server.utils import helpers
 
 # TODO: Make copyright statements consistent
 # TODO: Work on format
@@ -18,7 +19,7 @@ from server import model_access
 #     task_idx (zero-based task index)
 #     msg (string message)
 # Example: /student_message (URI), task_idx=0&msg=Hello (request data)
-class StudentMessageHandler(XPartyHandler):
+class StudentActionHandler(XPartyHandler):
     def post(self):
         try:
             self.init_user_context()
@@ -31,10 +32,10 @@ class StudentMessageHandler(XPartyHandler):
             
             else:
                 task_idx = int(self.request.get("task_idx", 0))
-                msg = self.request.get("msg", "")
-                action_type = "message"
-                action_data = { "description": msg, "msg": msg }                        
-                model_access.add_student_action(self.user, task_idx, action_type, action_data)
+                action_type = self.request.get("action_type")
+                action_description = self.request.get("action_description")
+                action_data = helpers.from_json(self.request.get("action_data", ""))
+                model_access.add_student_action(self.user, task_idx, action_type, action_description, action_data)
                 self.write_response_as_json({ "status": 1 })
         
         except exceptions.XPartyException as e:

@@ -19,13 +19,16 @@ class StudentPage(XPartyView):
             if exceptions.NotAnAuthenticatedStudentError.check(self.user):
                 raise exceptions.NotAnAuthenticatedStudentError()
             
-            else:  
+            else:                 
                 template_values = {               
-                    'token'     : channel.create_channel(person=self.user, lesson_code=self.user.lesson.lesson_code),
-                    'student'   : helpers.to_json(self.user.to_dict()),
-                    'lesson'    : helpers.to_json(self.user.lesson.to_dict())
+                    'token'         : channel.create_channel(person=self.user, lesson_code=self.user.lesson.lesson_code),
+                    'student'       : helpers.to_json(self.user.to_dict()),
+                    'lesson'        : helpers.to_json(self.user.lesson.to_dict()),
+                    'activity_type' : self.user.lesson.activity_type
                 }
-                self.write_response_with_template("student.html", template_values)
+                
+                student_template = self.get_custom_template("student", self.user.lesson)
+                self.write_response_with_template(student_template, template_values, custom=True)
 
         except exceptions.NotAnAuthenticatedStudentError:
             self.redirect_to_student_login(msg="Please log in again.")

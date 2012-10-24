@@ -14,11 +14,11 @@ class AdminPage(XPartyView):
         try:
             self.init_user_context("teacher")
 
-            if exceptions.NotAnAuthenticatedAdminError.check(self.user):
-                raise exceptions.NotAnAuthenticatedAdminError()
+#            if exceptions.NotAnAuthenticatedAdminError.check(self.user):
+#                raise exceptions.NotAnAuthenticatedAdminError()
             
-            else:
-                self.write_response_with_template("admin.html")
+#            else:
+            self.write_response_with_template("admin.html")
 
         except exceptions.NotAnAuthenticatedAdminError:
             if self.user is None:

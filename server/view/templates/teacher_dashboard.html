@@ -1,4 +1,4 @@
-{% extends "side_navigation_layout.html" %}
+{% extends "base.html" %}
 {# vim: set sw=2 ts=2 expandtab: #}
 
 {% block head %}
@@ -7,9 +7,10 @@
 <script type="text/javascript" src="/js/lesson.js?version=072512"></script>
 <script type="text/javascript">
 // <![CDATA[ 
-  var DEBUG = {{ debug }};     
+  var DEBUG = {{ debug }}; 
+  {{ init_activity_types_js }}
   {{ lessons|init_lessons_js }}
-        
+   
   $(document).ready(function() {  
     updateUI();
   });
@@ -29,33 +30,33 @@
 </script>
 {% endblock %}
 
-{% block top %}
+{% block body %}
 <div class="container_16 cntrmain">
-  <div class="grid_16 branding">
-      {% include "header.html" %}
-      <div class="clear"></div>
-  </div><!--- end grid_16 -->
-</div><!-- end container_16 -->
-{% endblock %}
+    <div class="grid_16 branding">
+        {% include "header.html" %}
+        <div class="clear"></div>
+    </div>
+</div>
 
-{% block side_panel %}
-  <div id="side_button_bar">
-    <button class="load_btn cssbtn" id="create_lesson_btn" onclick="showLessonForm('');">Create Activity</button><br/>
-    <button class="load_btn cssbtn" id="stop_lessons_btn" onclick="stopAllLessons(); return false;">Stop All Activities</button><br/>
-    <button class="load_btn cssbtn" id="delete_lessons_btn" onclick="deleteAllLessons(); return false;">Delete All Activities</button><br/>
-  </div>
-{% endblock %}
-
-{% block content_area %}
-  <div id="data_container">
-	<header class="info">
-		<span id="content_title" class="h2"></span>
-		<span id="lesson_filter" style="margin-left:5px"></span>
-	</header>
-	<div id="error" style="color:red; margin:10px 5px 5px 5px; display:none"></div>
-    <div id="content"></div>
-  </div>
-{% endblock %}
-
-{% block bottom %}
+<div class="container_16 cntrbody">
+    <div class="grid_16">
+        <div class="grid_5">
+            <div id="side_button_bar">
+                <button class="load_btn cssbtn" id="create_lesson_btn" onclick="showLessonForm('');">Create Activity</button><br/>
+                <button class="load_btn cssbtn" id="stop_lessons_btn" onclick="stopAllLessons(); return false;">Stop All Activities</button><br/>
+                <button class="load_btn cssbtn" id="delete_lessons_btn" onclick="deleteAllLessons(); return false;">Delete All Activities</button><br/>
+            </div>
+        </div><!-- end grid_5 -->
+        <div class="grid_11">
+            <div id="data_container">
+                <header class="info">
+                    <span id="content_title" class="h2"></span>
+                    <span id="lesson_filter" style="margin-left:5px"></span>
+                </header>
+                <div id="error" style="color:red; margin:10px 5px 5px 5px; display:none"></div>
+                <div id="content"></div>
+            </div>
+        </div><!-- end grid_11 -->
+    </div>
+</div>
 {% endblock %}

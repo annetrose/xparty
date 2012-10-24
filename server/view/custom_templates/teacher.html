@@ -6,13 +6,19 @@
   <link rel="stylesheet" type="text/css" href="/css/task_chooser.css"></link>
   <script type="text/javascript" src="/js/common.js?version=091812"></script>
   <script type="text/javascript" src="/js/lesson.js?version=091812"></script>
+  <script type="text/javascript" src="/js/activity_data.js?version=091812"></script>
   <script type="text/javascript" src="/js/teacher.js?version=091812"></script>
   <script type="text/javascript" src="/js/task_chooser.js"></script>
+  <script type="text/javascript" src="/js/jquery.tagcloud.js"></script>
+  
+  {% block custom_head %}
+  {% endblock %}
   
   <script type="text/javascript">
   // <![CDATA[
     var TOKEN = "{{ token }}";
-    {{ lesson|init_lesson_js }}    
+    {{ init_activity_types_js }}
+    {{ lesson|init_lesson_js }}
     {{ students|init_students_js }}
     {{ task_histories|init_task_histories_js }}
                 
@@ -22,15 +28,7 @@
         
   // ]]
   </script>
-{% endblock %}
-
-{% block top %}
-<div class="container_16 cntrmain">
-  <div class="grid_16 branding">
-      {% include "header.html" %}
-      <div class="clear"></div>
-  </div><!--- end grid_16 -->
-</div><!-- end container_16 -->
+  
 {% endblock %}
 
 {% block side_panel_lower %}

@@ -73,22 +73,16 @@ function getLessonHtml(lesson, showTeacher) {
 
 	html += '<div>';
     if (lesson.class_name) {
-        html += '<h5>'+lesson.class_name + '</h5>';
-    }
-    else {
-    	customStyles = 'style="padding-top:0; margin-top:0;"';
+    	var customStyles = !lesson.description ? 'style="margin-bottom:30px"': '';
+        html += '<h5 ' + customStyles + '>' + lesson.class_name + '</h5>';
     }
     
     if (lesson.description) {
-       html += '<p class="lesson_description" '+customStyles+'>'+lesson.description + '</p>';
+    	var customStyles = !lesson.class_name ? 'style="padding-top:0px; margin-top:0; margin-bottom:30px; line-height:1"': '';
+       html += '<p ' + customStyles + '>' + lesson.description + '</p>';
     }
     
-    if (showTeacher!=undefined && showTeacher && lesson.teacher_nickname) {
-        html += '<h5>Teacher</h5>';
-        html += '<p><ul><li>'+lesson.teacher_nickname+'</li></ul></p>';
-    }
-    
-    html += '<h5 class="task_label">Tasks</h5>';
+    html += '<h5>Tasks</h5>';
     html += '<ol>';
     $.each(lesson.tasks, function(i, task) {
         var taskTitle = task[0];
@@ -97,6 +91,11 @@ function getLessonHtml(lesson, showTeacher) {
         html += '<li>'+(i+1)+'. '+taskTitle+'</li>';
     });
     html += '</ol>';
+    
+    if (lesson.activity_type) {
+    	html += '<h5>Activity Type</h5>';
+    	html += '<ol><li>' + lesson.activity_type + '</li></ol>';
+    }
 
     var utc_offset_minutes = (new Date()).getTimezoneOffset();
     html += '<ul>';
@@ -137,7 +136,7 @@ function getLessonHtml(lesson, showTeacher) {
 function showLessonForm(lessonCode) {
 	// NOTE: Existing data not modified when activity is edited.  Should option to clear data be given?
 
-	var pageTitle, activityName, className, activityDesc;
+	var pageTitle, activityType, activityName, className, activityDesc;
 	var debug = true;
 	
 	var isNewLesson = lessonCode == undefined || lessonCode == '';
@@ -145,6 +144,7 @@ function showLessonForm(lessonCode) {
 		pageTitle = 'Create activity';
 		var now = getLocalTime();
 		var timestamp = debug ? getNumericTimestamp(getLocalTime()) : '';
+		activityType = '';
 		activityName = (timestamp?'LN:'+timestamp:'');
 		className = (timestamp?'CN:'+timestamp:'');
 		activityDesc = (timestamp?'LD:'+timestamp:'');
@@ -152,23 +152,29 @@ function showLessonForm(lessonCode) {
 	else {
 		pageTitle = 'Edit activity';
 		var lesson = getLesson(lessonCode);
+		activityType = lesson.activity_type;
 		activityName = lesson.title;
 		className = lesson.class_name;
 		activityDesc = lesson.description;
 	}
-	
+    
     var html = '<form id="lesson_form" class="wufoo">';
     html += '<ul>';
-    html += '<li>';
-    html += '<label class="lesson_title desc">Activity name</label>';
-    html += '<input type="text" size="50" name="lesson_title" value="'+escapeDoubleQuotesForHtml(activityName)+'" class="login_box field text fn flwid"></input>';
+    html += '<li style="width: 250px !important">';
+    html += '<label class="desc">Activity type</label>';
+    html += '<select id="activity_type">';
+    html += '</select>';
     html += '</li>';
     html += '<li>';
-    html += '<label class="class_name desc">Class name (optional)</label>';
-    html += '<input type="text" size="50" name="class_name" value="'+escapeDoubleQuotesForHtml(className)+'" class="login_box field text fn flwid"></input>';
+    html += '<label class="desc">Activity name</label>';
+    html += '<input type="text" size="50" name="lesson_title" value="'+escapeDoubleQuotesForHtml(activityName)+'" class="field text fn flwid"></input>';
     html += '</li>';
     html += '<li>';
-    html += '<label class="lesson_description desc">Activity description</label>';
+    html += '<label class="desc">Class name (optional)</label>';
+    html += '<input type="text" size="50" name="class_name" value="'+escapeDoubleQuotesForHtml(className)+'" class="field text fn flwid"></input>';
+    html += '</li>';
+    html += '<li>';
+    html += '<label class="desc">Activity description (optional)</label>';
     html += '<textarea rows="4" name="lesson_description" class="field textarea small flwid">'+activityDesc+'</textarea>';
     html += '</li>';
     html += '</ul>';  
@@ -193,6 +199,7 @@ function showLessonForm(lessonCode) {
     $('#content_title').html(pageTitle);
     $('#content').html(html);
     updateTasks();
+    updateActivityTypes(activityType);
     
     $('#create_edit_button').click(function() {
     	var lessonCode = $('#lesson_code').val();
@@ -211,8 +218,6 @@ function getTaskHtml(i, title, description, layout) {
 	html += '<input type="text" size="50" value="'+escapeDoubleQuotesForHtml(title)+'" class="task_title field text fn flwid"></input>';
 	html += '<label class="task_description_label desc" style="margin-top:5px">Task #'+i+' description</label>';
 	html += '<textarea class="task_description field textarea smaller flwid">'+description+'</textarea>';
-	html += '<label class="task_layout_label desc" style="margin-top:5px">Task #'+i+' layout</label>';
-	html += '<input type="text" size="50" value="'+layout+'" class="task_layout field text fn flwid"></input><br/>';
 	html += '<span class="inline"><a class="task_minus">[-]</a> <a class="task_plus">[+]</a></span>';
 	html += '<br/>';
 	html += '</li>';
@@ -229,13 +234,10 @@ function updateTasks() {
 		updateTaskAttrs('task_title', task, i);
 		updateTaskAttrs('task_description_label', task, i);
 		updateTaskAttrs('task_description', task, i);
-		updateTaskAttrs('task_layout_label', task, i);
-		updateTaskAttrs('task_layout', task, i);
 		updateTaskAttrs('task_plus', task, i);
 		updateTaskAttrs('task_minus', task, i);
 		$('.task_title_label', task).html('Task #'+i+' name');
 		$('.task_description_label', task).html('Task #'+i+' description');
-		$('.task_layout_label', task).html('Task #'+i+' layout');
 		$('.task_plus', task).toggle(i==taskCount && i<MAX_NUM_TASKS);
 		$('.task_minus', task).toggle(i>1);
 		i++;
@@ -263,7 +265,6 @@ function addTask(plus) {
 	var clone = $('#task_1').clone();
 	$('.task_title', clone).val("");
 	$('.task_description', clone).val("");
-	$('.task_layout', clone).val("");
 	clone.insertAfter("#task_"+index);
 	updateTasks();
 }
@@ -278,15 +279,29 @@ function getTaskIndex(id) {
 	return id.substring(id.lastIndexOf("_")+1, id.length);
 }
 
+function updateActivityTypes(currentActivityType) {
+	var activityTypeHtml = '';
+	for (var i=0; i<g_activity_types.length; i++) {
+		var activityType = g_activity_types[i];
+		activityType
+		activityTypeHtml += '<option id="activity_type_'+i+'" value="'+activityType.type+'"'+(currentActivityType==activityType.type?" selected":"")+'>'+activityType.description+'</option>';
+	}
+	$('#activity_type').html(activityTypeHtml);
+	$('#activity_type').selectbox();
+}
+
 //=================================================================================
 // Lessons Actions
 //=================================================================================
 
 function createEditLesson(lessonCode) {
+	var data = $('#lesson_form').serialize();
+	// selectbox not included when form serialized so added manually
+	data += "&activity_type="+$("#activity_type").val();
 	$.ajax( "/teacher_activity", {
 		type: 'POST',
 		async: false,
-		data: $('#lesson_form').serialize(),
+		data: data,
 		dataType: 'json',
 		success: function(data) {
 			if (data.status == 1) {
@@ -514,11 +529,12 @@ function clearLesson(lessonCode, showDialog) {
 			success: function(data) {
 				if (data.status==1) {
 					g_students = {};
+					g_task_histories = [];
 					if (typeof updateData == 'function') {
 						updateData();
 					}
-					if (typeof updateUI == 'function') {
-					   updateUI();
+					if (typeof initUI == 'function') {
+					    initUI();
 					}
 					if (showDialog) {
 					    showMessageDialog('All student data has been cleared from activity '+ lessonCode);

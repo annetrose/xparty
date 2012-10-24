@@ -21,8 +21,7 @@ class TeacherDashboardPage(XPartyView):
             else:
                 template_values = {
                     "lessons"      : model_access.get_lessons(self.user, as_json=True),
-                    "debug"        : "true" if settings.DEBUG else "false",
-
+                    "debug"        : "true" if settings.DEBUG else "false"
                 }         
                 self.write_response_with_template("teacher_dashboard.html", template_values)
 
