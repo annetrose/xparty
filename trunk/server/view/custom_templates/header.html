@@ -1,0 +1,25 @@
+<div class="grid_5 hd"><a href='/'><img src="/imgs/sp_logo.png" alt="XParty Logo" id="logo_img" /></a></div>
+<div class="grid_10 hd">
+<div align="right" id="header_user_info" class="light">
+{% if is_logged_in %}
+    {{ nickname }}
+    {% if user_type == "teacher" %}
+    <a class="header_link" href="/teacher_dashboard">Dashboard</a>&nbsp;
+    <a class="header_link" href="/teacher_logout">Logout</a>&nbsp; 
+    {% endif %}
+    {% if user_type == "student" %}
+    <a class="header_link" href="/student_logout">Logout</a>&nbsp; 
+    {% endif %}
+{% else %}
+    <div class="login_text light">
+    Login as
+    <a class="header_link" href="{{ teacher_login_url }}">teacher</a>
+    or
+    <a class="header_link" href="/student_login">student</a>
+    </div>
+{% endif %}
+</div>
+</div>
+<div id="msg" class="msg">{{ msg }}</div>
+
+

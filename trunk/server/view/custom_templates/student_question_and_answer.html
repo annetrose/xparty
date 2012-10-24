@@ -1,0 +1,53 @@
+{% extends "student.html" %}
+{# vim: set sw=2 ts=2 expandtab: #}
+
+{% block custom_head %}
+<script type="text/javascript">
+    function initCustomUI() { 
+        $("#answer").keyup(function(event) {
+            if (event.which == 13) {   // Enter key
+                send_answer();
+            }
+        });
+        
+        $('#submit_answer').click(function() {
+            send_answer();
+        });
+    }
+    
+    function initCustomTaskUI() {
+        // TODO: load existing answer, if any
+        var task_idx = selectedTaskIdx();
+        var task = g_lesson.tasks[task_idx];
+        var task_title = task[0];
+        $('#question').html(task_title);
+        $('#answer').val("");
+        $('#warning').html("");
+        $('#msg').html("");
+    }
+    
+    function send_answer() {
+        var answer = $('#answer').val();
+        if (answer != "") {
+            on_student_action("answer", answer, { "answer":answer });
+            task_num = selectedTaskIdx() + 1;
+            if (task_num < g_lesson.tasks.length) {
+                changeSelectedTask(task_num+1);  
+            }
+            else {
+                $('#msg').html("Congratulations! You have finished this activity.");
+            }
+        }
+        else {
+            $("#warning").html("Please enter an answer before submitting");
+        }
+    }
+</script>
+{% endblock %}
+
+{% block task_gui %}    
+<div id="question" style="margin-top:10px; margin-bottom:5px"></div>
+<input id="answer" type="text" class="field text fn flwid" style="margin-bottom:5px"></input><br/>
+<button class="cssbtn" id="submit_answer">Submit Answer</button>
+<div id="warning" class="warning" style="margin-top:5px"></div>
+{% endblock %}

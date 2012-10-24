@@ -8,8 +8,8 @@
 
 from server import model_access
 from server import user
-from server import view
 from server.lib import gaesessions
+from server.view import templates, custom_templates
 from google.appengine.ext.webapp import template
 import os, webapp2
         
@@ -25,15 +25,26 @@ class XPartyView(webapp2.RequestHandler):
         
         # Check if user logged in and set self.user   
         self.user = user.get_user(user_type)
-                
-    def write_response_with_template(self, template_filename, custom_template_vals=None):
+     
+    def get_custom_template(self, person_type, lesson):
+        template = "".join((person_type, ".html"))
+        if lesson.activity_type is not None:
+            custom_template = "".join((person_type, "_", lesson.activity_type, ".html"))
+            if os.path.isfile(os.path.join(os.path.dirname(custom_templates.__file__), custom_template)):
+                template = custom_template
+        return template;
+                               
+    def write_response_with_template(self, template_filename, custom_template_vals=None, custom=False):
         template_vals = self._init_template_values()
         if custom_template_vals is not None:
             template_vals = dict(template_vals.items() + custom_template_vals.items())
-        template_filename = os.path.join(os.path.dirname(view.__file__), 'templates', template_filename)
+        template_subdir = "custom" if custom else ""
+        template_filename = os.path.join(os.path.dirname(templates.__file__), template_subdir, template_filename)
+        from server.utils import helpers
+        helpers.log("*** {0}".format(template_filename))
         html = template.render(template_filename, template_vals)    
         self.response.out.write(html)
-                
+        
     def redirect_to_student_login(self, msg=None):
         self.redirect_with_msg(msg=msg, dst="/student_login")
         

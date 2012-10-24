@@ -6,8 +6,6 @@
 # License: Apache License 2.0 - http://www.apache.org/licenses/LICENSE-2.0
 */
 
-DEFAULT_TASK_URL = '/html/default_task.html';
-
 function initializeStudent() {
 	openChannel();
 	initUI();
@@ -24,7 +22,7 @@ function initUI() {
 		var taskNum = i+1;
 		var task = lesson.tasks[i];
 		var taskTitle = task[0];
-		taskChooserHtml += '<option class="task_title" id="task_title_"'+i+'" value="'+taskNum+'">'+taskNum+'.&nbsp;'+taskTitle+'</option>';
+		taskChooserHtml += '<option id="task_title_'+i+'" value="'+taskNum+'">'+taskNum+'.&nbsp;'+taskTitle+'</option>';
 	}
 	$('#task_chooser').html(taskChooserHtml);
     $('#task_chooser').selectbox();
@@ -35,23 +33,21 @@ function initUI() {
     	taskIdx--;
     }
     
+    if (typeof initCustomUI == "function") {
+    	initCustomUI();
+    }
+    
     initTaskUI(taskIdx);
 }
 
 function initTaskUI(taskIdx) {	  
 	var task = g_lessons[0].tasks[taskIdx];
-	
-	// task description
 	var description = (task[1] == '') ? '(none)' : task[1];
 	$('#task_description').html(description);
-
-	// task url
-	var url = (typeof task[2] == "undefined" || task[2] == "") ? DEFAULT_TASK_URL : task[2];
-	$('#task_area').load(url, function(response, status, xhr) {
-		if (status == "error") {
-			$('#task_area').load(DEFAULT_TASK_URL);
-		}
-	});
+	
+    if (typeof initCustomTaskUI == "function") {
+    	initCustomTaskUI();
+    }
 }
 
 //=================================================================================
@@ -78,17 +74,15 @@ function onSocketMessage(msg) {
 	var num_updates = updates.length;
 	for (var i=0; i<num_updates; i++) {
 		var update = updates[i];
-		switch (update.type) {
+		switch (update.type) {	
 			// TODO: handle activity messages
-			case "xx":
-				var taskHistory = g_student_info.task_history[update.task_idx];
-				taskHistory.push(update.data);
-				if (update.task_idx == selectedTaskIdx()) {
-					alert('TODO: update gui')
-					// update gui
-				}
-				break;
-				
+//			case "xx":
+//				var taskHistory = g_student_info.task_history[update.task_idx];
+//				taskHistory.push(update.data);
+//				if (update.task_idx == selectedTaskIdx()) {
+//					// update gui
+//				}
+//				break;	
 			default:
 				break;
 		}
@@ -118,14 +112,16 @@ function onTaskChanged(taskIdx) {
 	initTaskUI(taskIdx);
 }
 
-function onStudentMessage(msg) {
+function on_student_action(actionType, actionDescription, actionData) {
 	$.ajax({
 		type: 'POST',
-		url: '/student_message', 
+		url: '/student_action', 
 		dataType: 'json',
 		data: {
 			task_idx : selectedTaskIdx(),
-			msg : msg,
+			action_type : actionType,
+			action_description : actionDescription,
+			action_data : $.toJSON(actionData)
 		},
 		cache: false,
 		success: function(data) {

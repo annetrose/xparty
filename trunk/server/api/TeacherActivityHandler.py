@@ -113,9 +113,9 @@ class TeacherActivityHandler(XPartyHandler):
                 
         except exceptions.XPartyException as e:
             e.write_response_as_json(self)
-            
-        
+              
     def create_edit_lesson(self, lesson=None):
+        activity_type = self.request.get("activity_type")
         lesson_title = self.request.get("lesson_title")
         lesson_description = self.request.get("lesson_description")
         class_name = self.request.get("class_name")
@@ -123,16 +123,16 @@ class TeacherActivityHandler(XPartyHandler):
         for task_num in range(1, int(self.request.get("max_num_tasks", "1"))+1):
             task_title = self.request.get("task_title_%d"%task_num)
             task_description = self.request.get("task_description_%d"%task_num)
-            task_layout = self.request.get("task_layout_%d"%task_num)
             if task_title != "":
-                task_infos.append((task_title, task_description, task_layout))
+                task_infos.append((task_title, task_description))
         tasks_json = helpers.to_json(task_infos)
         
-        if (len(lesson_title) == 0) or (len(task_infos) == 0):
-            return { "status": 0, "msg": "Activity name and one task are required." }
+        if (len(activity_type) == 0) or (len(lesson_title) == 0) or (len(task_infos) == 0):
+            return { "status": 0, "msg": "Activity type, activity name, and one task are required." }
          
         else: 
             data = {
+                'activity_type' : activity_type,
                 'title'         : lesson_title,
                 'class_name'    : class_name,
                 'description'   : lesson_description,

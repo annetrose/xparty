@@ -29,6 +29,7 @@ class Teacher(Person):
 
 class Lesson(db.Model):
     # PROPERTIES
+    activity_type = db.StringProperty()
     lesson_code = db.StringProperty()
     teacher = db.ReferenceProperty(Teacher)
     title = db.StringProperty()
@@ -48,6 +49,7 @@ class Lesson(db.Model):
     def to_dict(self):
         return {
             'lesson_code':      self.lesson_code,
+            'activity_type':    self.activity_type,
             'teacher_nickname': self.teacher.nickname,
             'title':            self.title,
             'class_name':       self.class_name,
@@ -111,6 +113,7 @@ class StudentAction(db.Model):
     lesson = db.ReferenceProperty(Lesson)
     task_idx = db.IntegerProperty()
     action_type = db.StringProperty()
+    action_description = db.StringProperty()
     action_data_json = db.TextProperty()
     timestamp = db.DateTimeProperty(auto_now_add=True)
         
@@ -120,12 +123,13 @@ class StudentAction(db.Model):
     
     def to_dict(self):
         return {
-            'student_nickname': self.student.nickname,
-            'lesson_code':      self.lesson.lesson_code,
-            'task_idx':         self.task_idx,
-            'action_type':      self.action_type,
-            'action_data':      self.action_data,
-            'timestamp':        self.timestamp.strftime("%B %d, %Y %H:%M:%S %Z")
+            'student_nickname':     self.student.nickname,
+            'lesson_code':          self.lesson.lesson_code,
+            'task_idx':             self.task_idx,
+            'action_type':          self.action_type,
+            'action_description':   self.action_description,
+            'action_data':          self.action_data,
+            'timestamp':            self.timestamp.strftime("%B %d, %Y %H:%M:%S %Z")
         }
             
     def __repr__(self):

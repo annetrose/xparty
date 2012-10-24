@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{# vim: set sw=2 ts=2 expandtab: #}
+
+{% block body %}
+<div class="container_16 cntrbody">
+    <div class="grid_16">
+        <div class="grid_5">
+            <h3>Task</h3>
+            <select id="task_chooser" style="display:none;"></select>
+            <h3 style="margin-top:15px">Problem</h3>
+            <div id="task_description" style="margin-bottom:15px"></div>
+            {% block side_panel_lower %}{% endblock %}
+        </div>
+        <div class="grid_11">
+        {% block content_area %}{% endblock %}
+        </div>
+        {% block bottom %}{% endblock %}
+    </div>
+</div>
+{% endblock %}

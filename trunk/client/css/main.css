@@ -233,3 +233,6 @@ table.task_history tr td { padding-right:5px; text-overflow:ellipsis; overflow:h
 .cloud a { text-decoration:none; white-space:nowrap; padding-right:10px; }
 .cloud a:hover { text-decoration:underline; }
 .cloud a:hover.noLink { text-decoration:none; }
+
+.status { font-style: italic; }
+.warning { font-style:italic; color: red; }

@@ -16,10 +16,10 @@ from server.view.StudentLoginPage import StudentLoginPage
 from server.view.StudentPage import StudentPage
 from server.view.TeacherDashboardPage import TeacherDashboardPage
 from server.view.TeacherPage import TeacherPage
+from server.api.StudentActionHandler import StudentActionHandler
 from server.api.StudentInfoHandler import StudentInfoHandler
 from server.api.StudentLoginHandler import StudentLoginHandler
 from server.api.StudentLogoutHandler import StudentLogoutHandler
-from server.api.StudentMessageHandler import StudentMessageHandler
 from server.api.TeacherActivityHandler import TeacherActivityHandler
 from server.api.TeacherLoginHandler import TeacherLoginHandler
 from server.api.TeacherLogoutHandler import TeacherLogoutHandler
@@ -28,7 +28,7 @@ from server.api.ChannelDisconnectedHandler import ChannelDisconnectedHandler
 from server.api.ChannelExpiredHandler import ChannelExpiredHandler
 
 from google.appengine.ext.webapp import template
-template.register_template_library('server.view.templates.customtags.library')
+template.register_template_library('server.view.tags.library')
 
 application = webapp2.WSGIApplication([ 
     # views
@@ -40,10 +40,10 @@ application = webapp2.WSGIApplication([
     ('/teacher/([-_A-Za-z0-9]+)',  TeacherPage),  
     
     # apis
+    ('/student_action',            StudentActionHandler),
     ('/student_info',              StudentInfoHandler),
 	('/student_login_handler',     StudentLoginHandler),
 	('/student_logout',            StudentLogoutHandler),
-    ('/student_message',           StudentMessageHandler),
     ('/teacher_activity',          TeacherActivityHandler),
 	('/teacher_login',             TeacherLoginHandler),
 	('/teacher_logout',            TeacherLogoutHandler),
@@ -53,7 +53,7 @@ application = webapp2.WSGIApplication([
 ], debug=True)
 
 def main():
-	application.run()
+    application.run()
 
 if __name__ == '__main__':
-	main()
+    main()

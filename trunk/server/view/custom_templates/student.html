@@ -5,7 +5,7 @@
   <title>XParty - Student Browser</title>
   <link rel="stylesheet" type="text/css" href="http://www.google.com/cse/style/look/default.css" />
   <link rel="stylesheet" type="text/css" href="/css/task_chooser.css"></link>
-
+  
   <script type="text/javascript" src="/js/common.js"></script>
   <script type="text/javascript" src="/js/student.js?version=072512"></script>
   <script type="text/javascript" src="/js/task_chooser.js"></script>
@@ -13,7 +13,7 @@
   <script type="text/javascript">
   // <![CDATA[
     var TOKEN = "{{ token }}";
-    {{ lesson|init_lesson_js }}    
+    {{ lesson|init_lesson_js }}
     {{ student|init_student_js }}
 
     $(document).ready(function() {
@@ -21,6 +21,9 @@
     });
   // ]]>
   </script>
+  
+  {% block custom_head %}
+  {% endblock %}
 {% endblock %}
 
 {% block top %}
@@ -35,5 +38,8 @@
 
 {% block content_area %}
   <h3 style="margin-bottom:10px;"><span id="lesson_title"></span>&nbsp;&nbsp;<span class="small" style="font-weight:normal; color:grey">#<span id="lesson_code"></span></span></h3>
-  <div id="task_area"></div>
+  <div id="task_gui">
+    {% block task_gui %}
+    {% endblock %}
+  </div>
 {% endblock %}

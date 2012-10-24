@@ -33,7 +33,9 @@ class TeacherPage(XPartyView):
                 'students'           : model_access.get_students(lesson=lesson, as_json=True),
                 'task_histories'     : model_access.get_student_actions(lesson=lesson, group_by_task=True, as_json=True)
             }            
-            self.write_response_with_template("teacher.html", template_values)
+            
+            teacher_template = self.get_custom_template("teacher", lesson)
+            self.write_response_with_template(teacher_template, template_values, custom=True)
 
         except (exceptions.NotAnAuthenticatedTeacherError, exceptions.WrongPersonError):
             self.redirect_to_teacher_login()

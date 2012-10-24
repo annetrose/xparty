@@ -15,4 +15,4 @@ class TeacherLogoutHandler(XPartyHandler):
         self.init_user_context("teacher")
         if model_access.is_teacher_logged_in(self.user):
             model_access.log_out_person(self.user)
-            self.clear_session_and_redirect(dst=user.get_teacher_logout_url())
+            self.clear_session_and_redirect(dst=user.get_teacher_logout_url("/"))

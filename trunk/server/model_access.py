@@ -221,6 +221,7 @@ def create_lesson(data):
     lesson = Lesson(
         key_name = lesson_code,
         lesson_code = lesson_code,
+        activity_type = data['activity_type'],
         teacher = data['teacher'],
         title = data['title'], 
         class_name = data['class_name'], 
@@ -244,8 +245,7 @@ def copy_lesson(lesson):
         task_title = lesson.tasks[task_idx][0];
         if task_title != "":
             task_description = lesson.tasks[task_idx][1];
-            task_layout = lesson.tasks[task_idx][2] if len(lesson.tasks[task_idx])>=3 else "";
-            task_infos.append((task_title, task_description, task_layout))
+            task_infos.append((task_title, task_description))
     tasks_json = helpers.to_json(task_infos)
         
     data = {
@@ -324,16 +324,17 @@ def get_student_actions(lesson, task_idx=None, student=None, group_by_task=False
             
     return action_list
 
-def add_student_action(student, task_idx, action_type, action_data):    
+def add_student_action(student, task_idx, action_type, action_description, action_data):    
     action = StudentAction(
         student = student,
         lesson = student.lesson,
         task_idx = task_idx,
         action_type = action_type,
+        action_description = action_description,
         action_data_json = helpers.to_json(action_data)
     )
     action.put()  
-    channel.send_student_action(student=student, task_idx=task_idx, action_type=action_type, action_data=action_data)      
+    channel.send_student_action(student=student, task_idx=task_idx, action_type=action_type, action_description=action_description, action_data=action_data)      
             
 #===================================================================================
 # Misc

@@ -6,12 +6,11 @@
 # Date: Originally created July 2011
 # License: Apache License 2.0 - http://www.apache.org/licenses/LICENSE-2.0
 
-import datetime
+import datetime, os
 
 DEBUG = False
 try:
 	# Set to debug mode only when running on a development server
-	import os
 	if os.environ["SERVER_SOFTWARE"].startswith("Development"):
 		DEBUG = True
 except:
@@ -19,4 +18,4 @@ except:
 
 ENABLE_DEBUG_LOGGING = DEBUG
 CHANNEL_LIMIT_PER_STUDENT = 1
-STUDENT_SESSION_TIMEOUT = datetime.timedelta(days = 1);
+STUDENT_SESSION_TIMEOUT = datetime.timedelta(days = 1)

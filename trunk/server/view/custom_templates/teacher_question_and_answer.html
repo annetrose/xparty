@@ -1,0 +1,55 @@
+{% extends "teacher.html" %}
+{# vim: set sw=2 ts=2 expandtab: #}
+
+{% block custom_head %}
+<script type="text/javascript">
+    
+    var ANSWER_PANE = "answer";
+    g_customDataPanes[ANSWER_PANE] = { title: 'Answers' };
+    
+    function loadCustomPane(paneKey, div) {
+        switch(paneKey) {
+            case ANSWER_PANE:
+                loadAnswerPane(div);
+                break;
+            default:
+                div.html("");
+                break;
+        }
+    }
+    
+    function loadAnswerPane(div) {
+        var accumulator = new DataAccumulator();
+        var taskIdx = selectedTaskIdx();
+        var taskHistory = g_task_histories[taskIdx];
+        var answers = [];
+        for (var i=0; i<taskHistory.length; i++) {
+            var action = taskHistory[i];
+            if (action.action_type == "answer") {
+                item = new DataItem(action.action_data.answer, action);
+                accumulator.add(item);
+            }
+        }
+           
+        var html = '<h3 id="pane_title" style="margin-bottom:10px">'+g_customDataPanes[ANSWER_PANE].title+'</h3>';
+        html += '<div id="data_list"></div>';
+        div.html(html);
+    
+        var accordion = new AnswerAccordion($("#data_list"), accumulator);
+        accordion.show();
+    }
+    
+    function AnswerAccordion(div, accumulator) {
+        AccordionList.call(this, div, accumulator)
+    }
+    
+    AnswerAccordion.prototype = Object.create(AccordionList.prototype);
+
+    AnswerAccordion.prototype.expandedItem = function(item, i) {
+        var html = "<h5>Students</h5>\n";
+        html += "list of students goes here";
+        return html;
+    }
+       
+</script>
+{% endblock %}

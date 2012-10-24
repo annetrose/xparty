@@ -15,13 +15,13 @@
 // data panes
 var STUDENT_PANE = "students";
 var HISTORY_PANE = "history";
-var DATA_PANES = {};
-DATA_PANES[STUDENT_PANE] = { title: 'Students' };
-DATA_PANES[HISTORY_PANE] = { title: 'Task History' };
+var g_dataPanes = {};
+var g_customDataPanes = {};
+g_dataPanes[STUDENT_PANE] = { title: 'Students' };
+g_dataPanes[HISTORY_PANE] = { title: 'Task History' };
 var START_PANE = STUDENT_PANE;
 var g_currentPane = null;
-var g_activeAccordionIndex = false;
-var g_activeAccordionKey = null;
+var g_action_counts = [];
 
 // visual histories
 var ACTION_DIM = 6; // pixels
@@ -29,7 +29,7 @@ var ACTION_COLORS = { default:'#888888' };
 
 function initializeTeacher() {
 	openChannel();
-	updateData();	
+	updateData();
 	initUI();
 }
 
@@ -45,18 +45,18 @@ function initUI() {
 		var taskNum = i+1;
 		var task = lesson.tasks[i];
 		var taskTitle = task[0];
-		taskChooserHtml += '<option class="task_title" id="task_title_"'+i+'" value="'+taskNum+'">'+taskNum+'.&nbsp;'+taskTitle+'</option>';
+		taskChooserHtml += '<option id="task_title_'+i+'" value="'+taskNum+'">'+taskNum+'.&nbsp;'+taskTitle+'</option>';
 	}
 	$('#task_chooser').html(taskChooserHtml);
     $('#task_chooser').selectbox();
     
     // sidebar: data pane buttons
-    var html = '';
-    for (paneKey in DATA_PANES) {
-    	var paneInfo = DATA_PANES[paneKey];
-    	var buttonId = getPaneButtonId(paneKey);
-    	html += '<button class="load_btn cssbtn" id="'+buttonId+'" onclick="initPane(\''+paneKey+'\')">'+paneInfo.title+'</button><br/>';
+    var html = getPaneButtonHtml(STUDENT_PANE, g_dataPanes[STUDENT_PANE]);
+    for (paneKey in g_customDataPanes) {
+    	var paneData = g_customDataPanes[paneKey];
+    	html += getPaneButtonHtml(paneKey, paneData);
     }
+    html += getPaneButtonHtml(HISTORY_PANE, g_dataPanes[HISTORY_PANE]);
     $('#side_button_bar').html(html);
     
     // sidebar: lesson buttons
@@ -85,11 +85,14 @@ function updateUI() {
     var lesson = g_lessons[0];
     var lesson_code = lesson.lesson_code;
     updateTaskDescription(selectedTaskIdx());
-    $('#'+getPaneButtonId(STUDENT_PANE)).html(DATA_PANES[STUDENT_PANE].title+" (" + getStudentCount() + ")");
-	$('#stop_lesson_btn_'+lesson_code).toggle(lesson.is_active);
+    setPaneButtonHtml(STUDENT_PANE, g_dataPanes[STUDENT_PANE]);
+	for (paneKey in g_customDataPanes) {
+		setPaneButtonHtml(paneKey, g_customDataPanes[paneKey]);
+	}
+    $('#stop_lesson_btn_'+lesson_code).toggle(lesson.is_active);
 	$('#start_lesson_btn_'+lesson_code).toggle(!lesson.is_active);
 	$("#num_students").html(getLoggedInStudentCount());
-	$('#inactive').toggle(!g_lessons[0].is_active);
+	$('#inactive').toggle(!g_lessons[0].is_active);	
 }
 
 function initPane(pane) {
@@ -99,11 +102,43 @@ function initPane(pane) {
 	loadPane();
 }
 
+function getPaneButtonId(paneName) {
+	return "load_" + paneName + "_btn";
+}
+
+function getPaneButtonHtml(paneKey, paneData) {
+	var buttonId = getPaneButtonId(paneKey);
+	return '<button class="load_btn cssbtn" id="'+buttonId+'" onclick="initPane(\''+paneKey+'\')">'+paneData.title+'</button>';
+}
+
+function setPaneButtonHtml(paneKey, paneData) {
+    var itemCount = getPaneItemCount(paneKey);
+    $('#'+getPaneButtonId(paneKey)).html(paneData.title+(itemCount!=-1?" ("+itemCount+")":""));
+}
+
+function getPaneItemCount(paneKey) {
+	var itemCount = -1;
+	switch (paneKey) {
+		case STUDENT_PANE:
+			itemCount = getStudentCount();
+			break;
+		case HISTORY_PANE:
+			break;
+		default:
+			var task_idx = selectedTaskIdx();
+			if (typeof(g_action_counts[task_idx][paneKey]) != "undefined") {
+				itemCount = g_action_counts[task_idx][paneKey];
+			}
+			break;
+	}
+	return itemCount;
+}
+
 function loadPane() {	
 	updateUI();
 	$('.load_btn').removeClass("selected");
 	$("#"+getPaneButtonId(g_currentPane)).addClass("selected");
-	
+
 	switch (g_currentPane) {
 		case STUDENT_PANE:
 			loadStudentPane();
@@ -112,7 +147,12 @@ function loadPane() {
 			loadTaskHistoryPane();
 			break;
 		default:
-			$("#data_pane").html("");
+			if (typeof(loadCustomPane) == "function") {
+				loadCustomPane(g_currentPane, $("#data_pane"));
+			}
+			else {
+				$("#data_pane").html("");
+			}
 			break;
 	}
 		
@@ -131,23 +171,11 @@ $(window).resize(function() {
 });
 
 // initialize any data structures derived from data sent from server
-function updateData() {
+function updateData() {	
 	updateHistoryData();
-}
-
-function updateUIWithStudentActions(action) {
-	// TODO: update panes smartly
-	// HACK: Currently updates entire pane UI
-	updatePane();
-	
-//	switch(g_currentPane) {
-//		case STUDENT_PANE:
-//			break;
-//		case HISTORY_PANE:
-//			break;
-//		default:
-//			break;
-//	}
+	if (typeof(updateCustomData) != "undefined") {
+		updateCustomData();
+	}
 }
 
 //=================================================================================
@@ -246,23 +274,14 @@ function handle_log_out(data) {
 }
 
 function handle_action(data) {
-    var lesson = g_lessons[0];
-    var lesson_code = lesson.lesson_code;
-	if (data.lesson_code==lesson_code && g_students[data.student_nickname]!=undefined) {
-		var dataString = data.student_nickname + ' (#' + data.lesson_code + '): ' + data.action_type;
-		if (typeof data.action_data.description != "undefined") {
-			dataString += ': ' + data.action_data.description;
-		}
-		// TODO: pass off to appropriate handler
-		//alert(dataString);
-	}
-		
 	var task_idx = data.action_data.task_idx;
 	g_task_histories[task_idx].push(data);
-	g_students[data.student_nickname].task_history[task_idx].push(data);
+	g_students[data.student_nickname].task_history[task_idx].push(data);	
+	g_action_counts[task_idx][data.action_type] = g_action_counts[task_idx][data.action_type] + 1;
 	
 	if (task_idx == selectedTaskIdx()) {
-		updateUIWithStudentActions(data);
+		// TODO: Improve performance. Do not update entire pane.
+		updatePane();
 	}
 }
 
@@ -282,17 +301,18 @@ function updateTaskDescription(taskIdx) {
 }
 
 //=================================================================================
-// UI Data Panes
+// Student Pane
 //=================================================================================
 
 function loadStudentPane() {
 	var accumulator = new StudentAccumulator();
 	for (var studentNickname in g_students) {
 		var isLoggedIn = g_students[studentNickname].is_logged_in;
-		accumulator.add(studentNickname, isLoggedIn);
+		var item = new StudentDataItem(studentNickname, { "nickname":studentNickname, "is_logged_in":isLoggedIn });
+		accumulator.add(item);
 	}
 	
-	var html = '<h3 id="pane_title" style="margin-bottom:10px">'+DATA_PANES[STUDENT_PANE].title+'</h3>';
+	var html = '<h3 id="pane_title" style="margin-bottom:10px">'+g_dataPanes[STUDENT_PANE].title+'</h3>';
 	html += '<div id="data_list"></div>';
 	$("#data_pane").html(html);
 	
@@ -300,19 +320,87 @@ function loadStudentPane() {
 	accordion.show();
 }
 
+function StudentAccordion(div, accumulator) {
+	AccordionList.call(this, div, accumulator);
+}
+
+StudentAccordion.prototype = Object.create(AccordionList.prototype);
+
+StudentAccordion.prototype.expandedItem = function(item, i) {
+	var html = "<h5>Task History</h5>\n";
+	html += getStudentHistoryAsHTML(item.getKey());
+	return html;
+}
+
+StudentAccordion.prototype.show = function() {
+	AccordionList.prototype.show.call(this);
+	$(".logout_btn").click(function(event) {
+		event.stopPropagation();
+		var lesson = g_lessons[0];
+		var lessonCode = lesson.lesson_code;
+		logoutStudent($(this).val(), lessonCode);
+	});
+	
+	drawStudentHistories(this.items);
+}
+
+StudentAccumulator.prototype = new DataAccumulator();
+StudentAccumulator.prototype.constructor = StudentAccumulator;
+function StudentAccumulator() {
+	DataAccumulator.call(this);
+	this.sortBy = "login";
+}
+
+StudentAccumulator.prototype.getItems = function() {
+	// sort names alphabetically w/logged in users on top
+	if (this.sortBy == "login") {
+		var items = dict2Array(this.dict);
+		items.sort(function(a,b) {
+			if (a.data.is_logged_in==true && b.data.is_logged_in==false) {
+				return -1;
+			}
+			else if (a.data.is_logged_in==false && b.data.is_logged_in==true) {
+				return 1;
+			}
+			else {
+				var aName = a.data.nickname.toLowerCase();
+				var bName = b.data.nickname.toLowerCase();
+				return (aName > bName ? 1 : (aName < bName ? -1 : 0));
+			}
+		});		
+	}
+	// sort alphabetically
+	else {
+		items = DataAccumulator.prototype.getItems.call(this);
+	}
+	return items;
+}
+
+StudentDataItem.prototype = new DataItem();
+StudentDataItem.prototype.constructor = StudentDataItem;
+function StudentDataItem(key, data) {
+	DataItem.call(this, key, data);
+}
+	
+StudentDataItem.prototype.asHTML = function(i) {
+	var className = (this.data.is_logged_in===false ? "studentLoggedOut" : "studentLoggedIn");
+	var html = '<span class="' + className + '" style="font-size:1em;">' + this.getKey() + '</span>';
+	if (this.data.is_logged_in) {
+			html += ' <button class="logout_btn" value="'+this.getKey()+'" title="Logout student">X</button>';
+	}
+	html += '<div id="student'+(i+1)+'_history" class="student_history" style="float:right; margin-right:5px"></div></a>';
+	return html;	
+}
+
+//=================================================================================
+// History Pane
+//=================================================================================
+
 function loadTaskHistoryPane() {	
-	var html = '<h3 id="pane_title" style="margin-bottom:10px">'+DATA_PANES[HISTORY_PANE].title+'</h3>';
+	var html = '<h3 id="pane_title" style="margin-bottom:10px">'+g_dataPanes[HISTORY_PANE].title+'</h3>';
 	html += getTaskHistoryAsHTML();
 	$("#data_pane").html(html);
 }
-
-function getPaneButtonId(paneName) {
-	return "load_" + paneName + "_btn";
-}
-
-//=================================================================================
-// UI Histories
-//=================================================================================
 
 function getTaskHistoryAsHTML() { 
 	var html = '';
@@ -322,15 +410,15 @@ function getTaskHistoryAsHTML() {
  	//for (var i=0; i<taskHistory.length; i++) {
 	// new on top
  	for (var i=taskHistory.length-1; i>=0; i--) {
- 		var taskItem = taskHistory[i];
- 		var taskType = taskItem.action_type;
-		var taskDescription = typeof taskItem.action_data.description != "undefined" ? taskItem.action_data.description : "-";
-		var taskTime = getLocalTime(new Date(taskItem.timestamp)); 		
+ 		var action = taskHistory[i];
+ 		var actionType = action.action_type;
+		var actionDescription = action.action_description && action.action_description!="" ? action.action_description : "-";
+		var actionTime = getLocalTime(new Date(action.timestamp)); 		
 		html += '<tr>';
-		html += '<td style="width:17ex">' + '<div style="width:'+ACTION_DIM+'px;height:'+ACTION_DIM+'px !important;background:'+getActionColor(taskType)+'; float:left; margin-right:4px; margin-top:7px;">&nbsp;</div> ' + taskType.replace(" ", "&nbsp;") + '</td>';
-		html += '<td>' + taskDescription + '</td>';
- 		html += '<td style="width:13ex">'+taskItem.student_nickname+'</td>';
-		html += '<td style="width:15ex">' + getFormattedTimestamp(taskTime) + '</td>';
+		html += '<td style="width:17ex">' + '<div style="width:'+ACTION_DIM+'px;height:'+ACTION_DIM+'px !important;background:'+getActionColor(actionType)+'; float:left; margin-right:4px; margin-top:7px;">&nbsp;</div> ' + actionType.replace(" ", "&nbsp;") + '</td>';
+		html += '<td>' + actionDescription + '</td>';
+ 		html += '<td style="width:13ex">'+action.student_nickname+'</td>';
+		html += '<td style="width:15ex">' + getFormattedTimestamp(actionTime) + '</td>';
 		html += '</tr>';
  	}
 
@@ -371,7 +459,7 @@ function getStudentHistoryAsHTML(studentNickname) {
 			var action = taskHistory[i];
 			var actionTime = getLocalTime(new Date(action.timestamp));
 			var actionType = action.action_type;
-			var actionDescription = typeof action.action_data.description != "undefined" ? action.action_data.description : "-";
+			var actionDescription = action.action_description && action.action_description!="" ? action.action_description : "-";
 			html += '<tr>';
 			html += '<td style="width:17ex">' + '<div style="width:'+ACTION_DIM+'px;height:'+ACTION_DIM+'px !important;background:'+getActionColor(actionType)+'; float:left; margin-right:4px; margin-top:7px;">&nbsp;</div> ' + actionType.replace(" ", "&nbsp;") + '</td>';
 			html += '<td>' + actionDescription + '</td>';
@@ -387,7 +475,7 @@ function getStudentHistoryAsHTML(studentNickname) {
 function drawStudentHistories(items) {
     for (var i=0; i<items.length; i++) {
     	var item = items[i];
-    	drawStudentHistory($('#student'+(i+1)+'_history'), item.studentNickname); 
+    	drawStudentHistory($('#student'+(i+1)+'_history'), item.getKey()); 
     };
 }
 
@@ -411,7 +499,7 @@ function drawStudentHistory(div, studentNickname) {
  		var actionHtml = '';
  		var action = taskHistory[i];
  		var actionType = action.action_type;
-		var actionDescription = typeof action.action_data.description != "undefined" ? action.action_data.description : "-";
+		var actionDescription = action.action_description && action.action_description!="" ? action.action_description : "-";
 
      	if (i>0) {
  			var actionTime = getLocalTime(new Date(action.timestamp));
@@ -422,7 +510,7 @@ function drawStudentHistory(div, studentNickname) {
  			}
  		}
  		
-     	actionHtml += '<div id="event_'+(i+1)+'" title="'+actionDescription+'" style="width:'+ACTION_DIM+'px;height:'+ACTION_DIM+'px !important;background:'+getActionColor(actionType)+';float:left;margin-right:'+actionMargin+'px;margin-top:'+topMargin+'px;">&nbsp;</div>';
+     	actionHtml += '<div id="event_'+(i+1)+'" title="'+escapeDoubleQuotesForHtml(actionType+': '+actionDescription)+'" style="width:'+ACTION_DIM+'px;height:'+ACTION_DIM+'px !important;background:'+getActionColor(actionType)+';float:left;margin-right:'+actionMargin+'px;margin-top:'+topMargin+'px;">&nbsp;</div>';
  		searchHistoryHtml.push(actionHtml);
  	}
  	
@@ -468,204 +556,6 @@ function getActionColor(type) {
 	return typeof ACTION_COLORS[type] != "undefined" ? ACTION_COLORS[type] : ACTION_COLORS['default'];
 }
 
-
-//=================================================================================
-// UI Accordion Lists
-//=================================================================================
-
-function AccordionList() {
-	this.div = null;
-	this.items = [];
-}
-
-AccordionList.prototype.show = function() {
-	if (!this.div) {
-		return;
-	}
-	
-	if (this.items.length==0) {
-		var html = '<div style="margin-bottom:15px;">(none)</div>';
-		this.div.html(html);
-	}
-	else {
-		var html = '<div id="accordion_list" class="accordion2">';
-		for (var i=0; i<this.items.length; i++) {
-			var item = this.items[i];
-			html += '<div id="item'+(i+1)+'" class="accordion_section"><a href="#"><span class="text_key">'+item.getKey()+'</span>'+item.asHTML()+this.customItemAddOns(item, i)+'</a></div>';		
-			html += '<div id="item'+(i+1)+'_expanded">';
-			html += this.customExpandedHeader();
-			html += this.expandedItem(item, i);
-			html += '</div>';		
-		}
-		html += '</div>';
-		this.div.html(html);
-				
-		g_activeAccordionIndex = this.getSelectedIndex(g_activeAccordionKey);
-		$('#accordion_list').accordion({
-			collapsible: true, 
-			active: g_activeAccordionIndex,
-			change: function(event, control) {
-				g_activeAccordionIndex = control.options.active;
-				var selectedItem = $(".accordion_section:eq("+g_activeAccordionIndex+")");
-				g_activeAccordionKey = $('.text_key', selectedItem).html();
-			}
-		});
-	}
-}
-
-AccordionList.prototype.getSelectedIndex = function(itemKey) {
-	var itemIndex = false;
-	if (itemKey!=null) {
-		for (var i=0; i<this.items.length; i++) {
-			if (itemKey == this.items[i].getKey()) {
-				itemIndex = i;
-				break;
-			}
-		}
-	}
-	return itemIndex;
-}
-
-AccordionList.prototype.customItemAddOns = function(item, i) {
-	return "";
-}
-
-AccordionList.prototype.customExpandedHeader = function(item, i) {
-	return "";
-}
-
-AccordionList.prototype.expandedItem = function(item, i) {
-	return "";
-}
-
-StudentAccordion.prototype = new AccordionList();
-StudentAccordion.prototype.constructor = StudentAccordion;
-
-function StudentAccordion(div, accumulator) {
-	AccordionList.call(this);
-	this.div = div;
-	this.accumulator = accumulator;
-	this.items = this.accumulator.getItems();
-}
-
-StudentAccordion.prototype.customItemAddOns = function(item, i) {
-	var html = "";
-	if (item.isLoggedIn) {
-			html += ' <button class="logout_btn" value="'+item.studentNickname+'" title="Logout student">X</button>';
-	}
-	html += '<div id="student'+(i+1)+'_history" class="student_history" style="float:right; margin-right:5px"></div></a>';
-	return html;
-}
-
-StudentAccordion.prototype.expandedItem = function(item, i) {
-	var html = "<h5>Task History</h5>\n";
-	html += getStudentHistoryAsHTML(item.studentNickname);
-	return html;
-}
-
-StudentAccordion.prototype.show = function() {
-	AccordionList.prototype.show.call(this);
-	$(".logout_btn").click(function(event) {
-		event.stopPropagation();
-		var lesson = g_lessons[0];
-		var lessonCode = lesson.lesson_code;
-		logoutStudent($(this).val(), lessonCode);
-	});
-	
-	drawStudentHistories(this.items);
-}
-
-//=================================================================================
-// Pane Data
-//=================================================================================
-
-//For info on JavaScript OOP, see:
-//http://www.javascriptkit.com/javatutors/oopjs.shtml   (new and this)
-//http://www.javascriptkit.com/javatutors/oopjs2.shtml  (constructors)
-//http://www.javascriptkit.com/javatutors/oopjs3.shtml  (inheritance)
-
-function DataAccumulator() {
-	this.dict = {};
-	this.sortBy = null;
-}
-
-DataAccumulator.prototype.add = function(key, item) {
-	if (this.dict[key] === undefined) {
-		this.dict[key] = item;
-	}
-}
-
-DataAccumulator.prototype.getItems = function() {
-	var items = dict2Array(this.dict);
-	sortInPlaceAlphabetically(items, this.sortBy);
-	return items;
-}
-	
-function DataItem() {
-}
-
-StudentAccumulator.prototype = new DataAccumulator();
-StudentAccumulator.prototype.constructor = StudentAccumulator;
-function StudentAccumulator() {
-	DataAccumulator.call(this);
-	this.sortBy = "studentNickname";
-}
-
-StudentAccumulator.prototype.getItems = function() {
-	// sort names alphabetically w/logged in users on top
-	if (this.sortBy == "login") {
-		var items = dict2Array(this.dict);
-		items.sort( function(a,b) {
-			if (a.isLoggedIn==true && b.isLoggedIn==false) {
-				return -1;
-			}
-			else if (a.isLoggedIn==false && b.isLoggedIn==true) {
-				return 1;
-			}
-			else {
-				var aName = a.studentNickname.toLowerCase();
-				var bName = b.studentNickname.toLowerCase();
-				return (aName > bName ? 1 : (aName < bName ? -1 : 0));
-			}
-		});		
-	}
-	
-	// sort alphabetically
-	else {
-		items = DataAccumulator.prototype.getItems.call(this);
-	}
-	return items;
-}
-
-StudentAccumulator.prototype.add = function(nickname, loggedIn) {
-	var item = new StudentDataItem(nickname, loggedIn);
-	DataAccumulator.prototype.add.call(this, nickname, item);
-}
-
-StudentDataItem.prototype = new DataItem();
-StudentDataItem.prototype.constructor = StudentDataItem;
-function StudentDataItem(studentNickname, isLoggedIn) {
-	this.studentNickname = studentNickname;
-	this.isLoggedIn = isLoggedIn;
-}
-
-StudentDataItem.prototype.getKey = function() {
-	return this.studentNickname;
-}
-	
-StudentDataItem.prototype.getAnnotationsItemLists = function() {
-	return [[]];
-}
-	
-StudentDataItem.prototype.asHTML = function() {
-	var className = (this.isLoggedIn===false ? "studentLoggedOut" : "studentLoggedIn");
-	return '<span class="nickname ' + className + '" style="font-size:1em;">' + this.studentNickname + '</span>';
-}
-	
-StudentDataItem.prototype.asExpandedHTML = function() {
-	return this.asHTML();
-}
-
 //=================================================================================
 // History Data
 //=================================================================================
@@ -677,12 +567,24 @@ function updateHistoryData() {
 			g_students[student_nickname].task_history.push([]);
 		}
 	}
-	
-	for (var task_idx=0; task_idx<g_task_histories.length; task_idx++) {
-		var task_history = g_task_histories[task_idx];
-		for (var j=0; j<task_history.length; j++) {
-			var action = task_history[j];
-			g_students[action.student_nickname].task_history[task_idx].push(action);
+
+	g_action_counts = [];
+	for (var task_idx=0; task_idx<g_lessons[0].tasks.length; task_idx++) {
+		var counts = {};
+		for (var paneKey in g_customDataPanes) {
+            counts[paneKey] = 0;
+        }
+		g_action_counts.push(counts);
+		
+		if (g_task_histories.length > 0) {
+			var task_history = g_task_histories[task_idx];
+			for (var j=0; j<task_history.length; j++) {
+				var action = task_history[j];
+				var type = action.action_type;
+				g_students[action.student_nickname].task_history[task_idx].push(action);
+				var counts = g_action_counts[task_idx];
+				counts[type] = counts[type] + 1;      
+			}
 		}
 	}
 }
