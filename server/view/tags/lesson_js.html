@@ -1,0 +1,8 @@
+    
+// Initialize lesson data
+var g_lessons = [];
+{% for lesson in lessons %}
+var lesson = {{ lesson|safe }};
+g_lessons.push(lesson);
+{% endfor %}
+{% if not list %}g_lesson = g_lessons[0];{% endif %}
