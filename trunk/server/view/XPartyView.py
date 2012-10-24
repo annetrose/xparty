@@ -40,8 +40,6 @@ class XPartyView(webapp2.RequestHandler):
             template_vals = dict(template_vals.items() + custom_template_vals.items())
         template_subdir = "custom" if custom else ""
         template_filename = os.path.join(os.path.dirname(templates.__file__), template_subdir, template_filename)
-        from server.utils import helpers
-        helpers.log("*** {0}".format(template_filename))
         html = template.render(template_filename, template_vals)    
         self.response.out.write(html)
         

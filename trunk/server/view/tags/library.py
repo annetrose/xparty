@@ -5,7 +5,10 @@ import os
 register = template.create_template_register()
 
 @register.filter
-def init_activity_types_js(foo=None):
+def init_activity_types_js(tmp=None):
+    # TODO: Filters require at least 1 variable to be passed in
+    # Tried implementing as an inclusion_tag (which does not require a variable) but
+    # then only one of the template directories could find it
     activity_types= []
     for template_file in os.listdir(os.path.dirname(custom_templates.__file__)):
         if template_file.startswith("student_") and template_file.endswith(".html"):
