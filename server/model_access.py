@@ -250,6 +250,7 @@ def copy_lesson(lesson):
         
     data = {
         'lesson_code': _create_lesson_code(),
+        'activity_type': lesson.activity_type,
         'teacher': lesson.teacher,
         'title': lesson.title + " (Clone)",
         'class_name': lesson.class_name,
