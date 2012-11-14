@@ -7,7 +7,7 @@
 # License: Apache License 2.0 - http://www.apache.org/licenses/LICENSE-2.0
 
 from server import channel
-from server.model import Lesson, Student, Teacher, StudentAction
+from server.model import Activity, Student, Teacher, StudentAction
 from server.utils import helpers
 from google.appengine.ext import db
 import datetime, random
@@ -128,21 +128,21 @@ def _get_teacher_id(teacher):
 # Student
 #===================================================================================
 
-def get_student(student_nickname=None, lesson_code=None, session_sid=None):
+def get_student(student_nickname=None, activity_code=None, session_sid=None):
     student = None
     if session_sid is not None:
         students = _fetch_all(Student, [("session_sid =", session_sid)])
         for match in students:
             student = match
-    elif student_nickname is not None and lesson_code is not None:
-        key_name = Student.make_key_name(student_nickname, lesson_code)
+    elif student_nickname is not None and activity_code is not None:
+        key_name = Student.make_key_name(student_nickname, activity_code)
         student = Student.get_by_key_name(key_name)
     return student
                     
-def get_students(lesson=None, only_logged_in=False, as_json=False):
+def get_students(activity=None, only_logged_in=False, as_json=False):
     filters = [];
-    if lesson is not None:
-        filters.append(("lesson =", lesson))
+    if activity is not None:
+        filters.append(("activity =", activity))
     if only_logged_in:
         filters.append(("lastest_logout_timestamp =", None))
     students = _fetch_all(Student, filters) 
@@ -157,9 +157,9 @@ def get_students(lesson=None, only_logged_in=False, as_json=False):
 def create_student(data): 
     now = datetime.datetime.now()
     student = Student(
-        key_name = Student.make_key_name(data['student_nickname'], data['lesson'].lesson_code),
+        key_name = Student.make_key_name(data['student_nickname'], data['activity'].activity_code),
         nickname = data['student_nickname'],
-        lesson = data['lesson'],
+        activity = data['activity'],
         first_login_timestamp = now,
         latest_login_timestamp = now,
         latest_logout_timestamp = None,
@@ -189,38 +189,36 @@ def is_student_anonymous(person):
 
 #===================================================================================
 # Activity
-# TODO: Rename Lesson => Activity
 #===================================================================================
     
-def get_lesson(lesson_code=None, client_id=None):
-    lesson = None
+def get_activity(activity_code=None, client_id=None):
+    activity = None
     if client_id is not None:
-        lesson_code = channel.lesson_code_for_client_id(client_id)
-    if lesson_code is not None:
-        lesson = Lesson.get_by_key_name(lesson_code)
-    return lesson
+        activity_code = channel.activity_code_for_client_id(client_id)
+    if activity_code is not None:
+        activity = Activity.get_by_key_name(activity_code)
+    return activity
     
-def get_lessons(teacher=None, do_not_include_deleted=True, as_json=False):
+def get_activities(teacher=None, do_not_include_deleted=True, as_json=False):
     filters = [];
     if teacher is not None:
         filters.append(("teacher =", teacher))
     if do_not_include_deleted:
             filters.append(("deleted_time =", None))
-    lessons = _fetch_all(Lesson, filters, "title")
+    activities = _fetch_all(Activity, filters, "title")
     
-    lesson_list = []
-    for lesson in lessons:
-        item = lesson if not as_json else helpers.to_json(lesson.to_dict())
-        lesson_list.append(item)
-               
-    return lesson_list
+    activity_list = []
+    for activity in activities:
+        item = activity if not as_json else helpers.to_json(activity.to_dict())
+        activity_list.append(item)
+    return activity_list
 
-def create_lesson(data):
-    lesson_code = _create_lesson_code()
+def create_activity(data):
+    activity_code = _create_activity_code()
     now = datetime.datetime.now()
-    lesson = Lesson(
-        key_name = lesson_code,
-        lesson_code = lesson_code,
+    activity = Activity(
+        key_name = activity_code,
+        activity_code = activity_code,
         activity_type = data['activity_type'],
         teacher = data['teacher'],
         title = data['title'], 
@@ -230,83 +228,83 @@ def create_lesson(data):
         start_time = now, 
         stop_time = None
     )
-    lesson.put()
-    return lesson
+    activity.put()
+    return activity
 
-def update_lesson(lesson, data):
+def update_activity(activity, data):
     for attr in data:
-        setattr(lesson, attr, data[attr])
-    lesson.put()
-    return lesson
+        setattr(activity, attr, data[attr])
+    activity.put()
+    return activity
         
-def copy_lesson(lesson):        
+def copy_activity(activity):        
     task_infos = []
-    for task_idx in range(0, len(lesson.tasks)):
-        task_title = lesson.tasks[task_idx][0];
+    for task_idx in range(0, len(activity.tasks)):
+        task_title = activity.tasks[task_idx][0];
         if task_title != "":
-            task_description = lesson.tasks[task_idx][1];
+            task_description = activity.tasks[task_idx][1];
             task_infos.append((task_title, task_description))
     tasks_json = helpers.to_json(task_infos)
         
     data = {
-        'lesson_code': _create_lesson_code(),
-        'activity_type': lesson.activity_type,
-        'teacher': lesson.teacher,
-        'title': lesson.title + " (Clone)",
-        'class_name': lesson.class_name,
-        'description': lesson.description, 
+        'activity_code': _create_activity_code(),
+        'activity_type': activity.activity_type,
+        'teacher': activity.teacher,
+        'title': activity.title + " (Clone)",
+        'class_name': activity.class_name,
+        'description': activity.description, 
         'tasks_json': tasks_json
     }
-    return create_lesson(data)
+    return create_activity(data)
 
-def start_lesson(lesson):
-    if lesson is not None:
-        lesson.stop_time = None
-        lesson.put()
+def start_activity(activity):
+    if activity is not None:
+        activity.stop_time = None
+        activity.put()
 
-def stop_lesson(lesson):
-    if lesson is not None:
+def stop_activity(activity):
+    if activity is not None:
         now = datetime.datetime.now()
-        lesson.stop_time = now
-        lesson.put()
+        activity.stop_time = now
+        activity.put()
  
-def clear_lesson(lesson):
-    if lesson is not None:
-        filters = [("lesson =", lesson)]
+def clear_activity(activity):
+    if activity is not None:
+        filters = [("activity =", activity)]
         db.delete(_fetch_all(StudentAction, filters))
         db.delete(_fetch_all(Student, filters))
     
-def delete_lesson(lesson):
-    if lesson is not None:
+def delete_activity(activity):
+    if activity is not None:
         now = datetime.datetime.now()
-        lesson.deleted_time = now
-        if lesson.stop_time is None:
-            lesson.stop_time = now
-        lesson.put()
+        activity.deleted_time = now
+        if activity.stop_time is None:
+            activity.stop_time = now
+        activity.put()
         
-def is_same_lesson(lesson1, lesson2):
-    return lesson1 is not None and lesson2 is not None and lesson1.key() == lesson2.key()
+def is_same_activity(activity1, activity2):
+    return activity1 is not None and activity2 is not None and activity1.key() == activity2.key()
 
-def _create_lesson_code():
+def _create_activity_code():
     # This is essentially a do loop, but I'm using a generous upper bound to prevent the
     # possibility of an endless (and potentially costly) spin, in case of a bug, for example.
     digits = 5
     for i in range(1000):
         n = random.randint(0,10**digits - 1)
-        lesson_code = "%05d"%n
-        lesson = Lesson.get_by_key_name(lesson_code)
-        if lesson is None:
+        activity_code = "%05d"%n
+        activity = Activity.get_by_key_name(activity_code)
+        if activity is None:
             break
-    return lesson_code
+    return activity_code
         
 #===================================================================================
 # StudentAction
 #===================================================================================
 
-def get_student_actions(lesson, task_idx=None, student=None, group_by_task=False, as_json=False):
+def get_student_actions(activity, task_idx=None, student=None, group_by_task=False, as_json=False):
     action_list = None
-    if lesson is not None:
-        filters = [("lesson =", lesson)]
+    if activity is not None:
+        filters = [("activity =", activity)]
         if task_idx is not None:
             filters.append(("task_idx =", task_idx))
         if student is not None:
@@ -315,7 +313,7 @@ def get_student_actions(lesson, task_idx=None, student=None, group_by_task=False
         
         action_list = []
         if group_by_task:
-            for task_idx in lesson.tasks:
+            for task_idx in activity.tasks:
                 action_list.append([])
                 
         for action in actions:
@@ -328,7 +326,7 @@ def get_student_actions(lesson, task_idx=None, student=None, group_by_task=False
 def add_student_action(student, task_idx, action_type, action_description, action_data):    
     action = StudentAction(
         student = student,
-        lesson = student.lesson,
+        activity = student.activity,
         task_idx = task_idx,
         action_type = action_type,
         action_description = action_description,
@@ -336,7 +334,8 @@ def add_student_action(student, task_idx, action_type, action_description, actio
     )
     action.put()  
     channel.send_student_action(student=student, task_idx=task_idx, action_type=action_type, action_description=action_description, action_data=action_data)      
-            
+    return action
+        
 #===================================================================================
 # Misc
 #===================================================================================

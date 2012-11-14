@@ -1,7 +1,7 @@
 @CHARSET "UTF-8"; 
 .sbHolder { background-color: #1B252E; border: solid 1px #515151; font-family: Arial, sans-serif; font-weight: normal;font-size: 16px; font-size: 1.6rem; height: 35px; position: relative;} 
 .sbSelector { display: block; height: 35px; left: 0; line-height: 35px; outline: none; overflow: hidden; position: absolute; text-indent: 10px; top: 0; max-width:85%; } 
-.sbSelector:link, .sbSelector:visited { color: #c8c5b8; outline: none;text-decoration: none; } 
+.sbSelector:link, .sbSelector:visited { color: #c8c5b8; outline: none; text-decoration: none; } 
 .sbSelector:hover { background-color: #303941}
 .sbToggle { background: url(/imgs/select_icons.png) 0 -116px no-repeat; display: block; height: 30px; outline: none; position:absolute; right: 0; top: 0; width: 30px; } 
 .sbToggle:hover { background: url(/imgs/select_icons.png) 0 -167px no-repeat; } 
@@ -11,8 +11,8 @@
 .sbHolderDisabled .sbHolder {} 
 .sbHolderDisabled .sbToggle {} 
 .sbOptions { background-color: #1b252e; border: solid 1px #515151; list-style: none; left: -1px; margin: 0; padding: 0; position: absolute; top: 30px; z-index: 1; overflow-y: auto; } 
-.sbOptions li { /*padding: 0 7px; */ padding: 0 !important; margin:0; margin-left:6px; } 
-.sbOptions a { border-bottom: dotted 1px #515151; display: block; outline:none; padding: 7px 0 7px 4px; } 
+.sbOptions li { padding: 0 !important; margin: 0; margin-left: 6px; } 
+.sbOptions a { border-bottom: dotted 1px #515151; display: block; outline: none; padding: 12px 0 12px 4px; } 
 .sbOptions a:link, .sbOptions a:visited { color: #ddd; text-decoration: none; } 
 .sbOptions a:hover { background-color: #303941}
 .sbOptions li.last a { border-bottom: none; } 

@@ -4,12 +4,12 @@
 {% block head %}
 <title>XParty - Teacher Dashboard</title>
 <script type="text/javascript" src="/js/common.js"></script>
-<script type="text/javascript" src="/js/lesson.js?version=072512"></script>
+<script type="text/javascript" src="/js/activity.js?version=072512"></script>
 <script type="text/javascript">
 // <![CDATA[ 
   var DEBUG = {{ debug }}; 
   {{ None|init_activity_types_js }}
-  {{ lessons|init_lessons_js }}
+  {{ activities|init_activities_js }}
    
   $(document).ready(function() {  
     updateUI();
@@ -18,12 +18,12 @@
   function updateUI() {
     var hash = window.location.hash;
     if (hash != '') {
-      var hashTokens = hash.split(':');
-      var lessonCode = hashTokens[0].substring(1);
-      showLessonForm(lessonCode);
+      var tokens = hash.split(':');
+      var activity_code = tokens[0].substring(1);
+      goToActivityForm(activity_code);
     }
     else {
-      showLessonLists(undefined, false); 
+      goToTeacherDashboard(undefined, false); 
     }
   }
 // ]]>
@@ -42,16 +42,16 @@
     <div class="grid_16">
         <div class="grid_5">
             <div id="side_button_bar">
-                <button class="load_btn cssbtn" id="create_lesson_btn" onclick="showLessonForm('');">Create Activity</button><br/>
-                <button class="load_btn cssbtn" id="stop_lessons_btn" onclick="stopAllLessons(); return false;">Stop All Activities</button><br/>
-                <button class="load_btn cssbtn" id="delete_lessons_btn" onclick="deleteAllLessons(); return false;">Delete All Activities</button><br/>
+                <button class="load_btn cssbtn" id="create_activity_btn" onclick="goToActivityForm('');">Create Activity</button><br/>
+                <button class="load_btn cssbtn" id="stop_activities_btn" onclick="stopAllActivities(); return false;">Stop All Activities</button><br/>
+                <button class="load_btn cssbtn" id="delete_activities_btn" onclick="deleteAllActivities(); return false;">Delete All Activities</button><br/>
             </div>
         </div><!-- end grid_5 -->
         <div class="grid_11">
             <div id="data_container">
                 <header class="info">
                     <span id="content_title" class="h2"></span>
-                    <span id="lesson_filter" style="margin-left:5px"></span>
+                    <span id="activity_filter" style="margin-left:5px"></span>
                 </header>
                 <div id="error" style="color:red; margin:10px 5px 5px 5px; display:none"></div>
                 <div id="content"></div>

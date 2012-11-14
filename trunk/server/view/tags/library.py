@@ -8,7 +8,7 @@ register = template.create_template_register()
 def init_activity_types_js(tmp=None):
     # TODO: Filters require at least 1 variable to be passed in
     # Tried implementing as an inclusion_tag (which does not require a variable) but
-    # then only one of the template directories could find it
+    # then only one of the two template directories could find it
     activity_types= []
     for template_file in os.listdir(os.path.dirname(custom_templates.__file__)):
         if template_file.startswith("student_") and template_file.endswith(".html"):
@@ -18,16 +18,16 @@ def init_activity_types_js(tmp=None):
     return template.render(tag_file, { 'activity_types' : activity_types })
 
 @register.filter
-def init_lessons_js(lessons):    
-    tag_file = os.path.join(os.path.dirname(__file__), 'lesson_js.html')
-    return template.render(tag_file, { 'lessons' : lessons, 'list' : True })
+def init_activities_js(activities):    
+    tag_file = os.path.join(os.path.dirname(__file__), 'activity_js.html')
+    return template.render(tag_file, { 'activities' : activities, 'list' : True })
 
 @register.filter
-def init_lesson_js(lesson):
-    lessons = []
-    lessons.append(lesson)
-    tag_file = os.path.join(os.path.dirname(__file__), 'lesson_js.html')
-    return template.render(tag_file, { 'lessons' : lessons, 'list' : False })
+def init_activity_js(activity):
+    activities = []
+    activities.append(activity)
+    tag_file = os.path.join(os.path.dirname(__file__), 'activity_js.html')
+    return template.render(tag_file, { 'activities' : activities, 'list' : False })
 
 @register.filter
 def init_students_js(students):
@@ -45,10 +45,3 @@ def init_student_js(student):
 def init_task_histories_js(histories):
     tag_file = os.path.join(os.path.dirname(__file__), 'task_history_js.html')
     return template.render(tag_file, { 'task_histories' : histories })
-
-# Example: {{ activity_type|init_task_area }}
-#@register.filter
-#def init_task_area(activity_type):
-#    template_file = activity_type+".html" if activity_type is not None else "default.html"
-#    tag_file = os.path.join(os.path.dirname(modules.__file__), template_file)
-#    return template.render(tag_file, {})

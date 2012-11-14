@@ -1,26 +1,26 @@
 /*
 # XParty - A Framework for Building Tools to Support Social Learning in Synchronous Environments
-# Author: Ben Bederson - www.cs.umd.edu/~bederson
-#         University of Maryland, Human-Computer Interaction Lab - www.cs.umd.edu/hcil
-# Date: September 2012
+# Authors: Ben Bederson - www.cs.umd.edu/~bederson
+#          Alex Quinn -- www.alexquinn.org
+#          Anne Rose -- www.cs.umd.edu/hcil/members/arose
+#          University of Maryland, Human-Computer Interaction Lab - www.cs.umd.edu/hcil
+# Date: Originally created September 2012
 # License: Apache License 2.0 - http://www.apache.org/licenses/LICENSE-2.0
 */
 
-function initializeStudent() {
+function initStudent() {
 	openChannel();
 	initUI();
 };
 
 function initUI() {	
-	var lesson = g_lessons[0];
-	var lesson_code = lesson.lesson_code;
-	$('#lesson_title').html(lesson.title);
-	$('#lesson_code').html(lesson_code);
+	$('#activity_title').html(g_activity.title);
+	$('#activity_code').html(g_activity.activity_code);
 	
 	var taskChooserHtml = '';
-	for (var i=0; i<lesson.tasks.length; i++) {
+	for (var i=0; i<g_activity.tasks.length; i++) {
 		var taskNum = i+1;
-		var task = lesson.tasks[i];
+		var task = g_activity.tasks[i];
 		var taskTitle = task[0];
 		taskChooserHtml += '<option id="task_title_'+i+'" value="'+taskNum+'">'+taskNum+'.&nbsp;'+taskTitle+'</option>';
 	}
@@ -33,21 +33,11 @@ function initUI() {
     	taskIdx--;
     }
     
-    if (typeof initCustomUI == "function") {
-    	initCustomUI();
+    if (typeof init_custom_ui == "function") {
+    	init_custom_ui();
     }
     
-    initTaskUI(taskIdx);
-}
-
-function initTaskUI(taskIdx) {	  
-	var task = g_lessons[0].tasks[taskIdx];
-	var description = (task[1] == '') ? '(none)' : task[1];
-	$('#task_description').html(description);
-	
-    if (typeof initCustomTaskUI == "function") {
-    	initCustomTaskUI();
-    }
+    on_task_changed(taskIdx);
 }
 
 //=================================================================================
@@ -77,11 +67,6 @@ function onSocketMessage(msg) {
 		switch (update.type) {	
 			// TODO: handle activity messages
 //			case "xx":
-//				var taskHistory = g_student_info.task_history[update.task_idx];
-//				taskHistory.push(update.data);
-//				if (update.task_idx == selectedTaskIdx()) {
-//					// update gui
-//				}
 //				break;	
 			default:
 				break;
@@ -91,7 +76,7 @@ function onSocketMessage(msg) {
 
 function onSocketError(error) {
 	if (error.code==401) {
-		$.post('/channel_expired/'+g_lessons[0].lesson_code, {}, updateChannelToken, 'json');
+		$.post('/channel_expired/'+g_activities[0].activity_code, {}, updateChannelToken, 'json');
 	}
 }
 
@@ -107,9 +92,15 @@ function updateChannelToken(data) {
 // UI Event Handlers
 //=================================================================================
 
-function onTaskChanged(taskIdx) {
-	// onTaskChanged is called from js/task_chooser.js
-	initTaskUI(taskIdx);
+function on_task_changed(taskIdx) {
+	// on_task_changed is called from js/task_chooser.js
+	var task = g_activities[0].tasks[taskIdx];
+	var description = (task[1] == '') ? '(none)' : task[1];
+	$('#task_description').html(description);
+	
+    if (typeof init_custom_task_ui == "function") {
+    	init_custom_task_ui();
+    }
 }
 
 function on_student_action(actionType, actionDescription, actionData) {
@@ -118,14 +109,17 @@ function on_student_action(actionType, actionDescription, actionData) {
 		url: '/student_action', 
 		dataType: 'json',
 		data: {
-			task_idx : selectedTaskIdx(),
+			task_idx : selected_task_idx(),
 			action_type : actionType,
 			action_description : actionDescription,
 			action_data : $.toJSON(actionData)
 		},
 		cache: false,
 		success: function(data) {
-			if (data.status!=1) {
+			if (data.status == 1) {
+				g_task_histories[data.action.task_idx].push(data.action);
+			}
+			else {
             	showMessageDialog(data.msg, "/student_login");
             }
 		}

@@ -2,6 +2,7 @@
 # XParty - A Framework for Building Tools to Support Social Learning in Synchronous Environments
 # Authors: Ben Bederson - www.cs.umd.edu/~bederson
 #          Alex Quinn -- www.alexquinn.org
+#          Anne Rose -- www.cs.umd.edu/hcil/members/arose
 #          University of Maryland, Human-Computer Interaction Lab - www.cs.umd.edu/hcil
 # Date: Originally created July 2011
 # License: Apache License 2.0 - http://www.apache.org/licenses/LICENSE-2.0
@@ -11,80 +12,63 @@ var TEACHER_LESSONS = 0;
 var ALL_LESSONS = 1;
 var MAX_NUM_TASKS = 10;
 
-// TODO: ajax data and success data (variables have same name)
-
 //=================================================================================
-// Lesson Lists UI (active and inactive)
+// Activity Lists UI (active and inactive)
 //=================================================================================
 
-function showLessonLists(teacherFilter, showTeacher) {
-    if (teacherFilter==="") teacherFilter = undefined;
-    var activeHtml = '';
-    var inactiveHtml = '';
-    for (var i=0; i<g_lessons.length; i++) {
-       var lesson = g_lessons[i];
-       if (teacherFilter==undefined || teacherFilter==lesson.teacher_nickname) {
-    		var html = getLessonHtml(lesson, showTeacher);
-       		if (lesson.is_active) {
-       			activeHtml += html;
-       		}
-       		else {           
-       			inactiveHtml += html;
-       		}
-    	}
-    }   
-          
-    $('#lessons_list_active').accordion('destroy');
-    $('#lessons_list_inactive').accordion('destroy');
-
+function createTeacherDashboard() {
     $('#content_title').html('Activities');
-    var html = '<div id="lessons_list_active" class="accordion2">'+activeHtml+'</div>';
-    html += '<br/>';
-    html += '<h3>Stopped Activities</h3>';
-    html += '<div id="lessons_list_inactive" class="accordion2">'+inactiveHtml+'</div>';  
+    var html = '<div id="activities_list_active" class="accordion2"></div>';
+    html += '<br/><h3>Stopped Activities</h3>';
+    html += '<div id="activities_list_inactive" class="accordion2"></div>';  
     $('#content').html(html); 
     
-    if (activeHtml) {
-       $('#lessons_list_active').accordion({
-          collapsible: true, 
-          active: false
-       });
-    }
-    else {
-        $('#lessons_list_active').html('(none)');
-    }
-        
-    if (inactiveHtml) {
-       $('#lessons_list_inactive').accordion({
-          collapsible: true, 
-          active: false
-       });
-    }
-    else {
-        $('#lessons_list_inactive').html('(none)');
-    }
+    html = { "active": "", "inactive": "" };
+    for (var i=0; i<g_activities.length; i++) {
+       var activity = g_activities[i];
+    	var key = activity.is_active ? "active" : "inactive";
+    	html[key] += getActivityHtml(activity);
+    }   
+    
+    createActivityList($("#activities_list_active"), html["active"]);
+    createActivityList($("#activities_list_inactive"), html["inactive"]);
 }
 
-function getLessonHtml(lesson, showTeacher) {
-	var lessonCode = lesson.lesson_code;
+function createActivityList(div, html) {     
+    div.accordion("destroy");
+    div.html(html);
+    if (html != "") {
+    	div.html(html);
+    	div.accordion({
+           collapsible: true, 
+           active: false
+        });
+     }
+     else {
+         div.html("(none)");
+     }
+}
+
+function getActivityHtml(activity) {
+	var activityCode = activity.activity_code;
 	var customStyles = '';
-	var viewButton = '<button class="cssbtn smallest" style="padding:4px !important; margin-right:8px; margin-top:-2px" onclick="event.stopPropagation(); goToLesson(\''+lessonCode+'\')" title="View activity"><span class="view_icon_only"></span></button>';
-	var html = '<h3 id="'+lessonCode+'"><div class="right" style="margin-top:5px;margin-right:5px;">'+viewButton+' #'+lessonCode+'</div><a href="#" style="margin:0px;">'+lesson.title+'</a></h3>'
+	var viewButton = '<button class="cssbtn smallest" style="padding:4px !important; margin-right:8px; margin-top:-2px" onclick="event.stopPropagation(); goToActivity(\''+activityCode+'\')" title="View activity"><span class="view_icon_only"></span></button>';
+	var html = '<h3 id="'+activityCode+'"><div class="right" style="margin-top:5px;margin-right:5px;">'+viewButton+' #'+activityCode+'</div><a href="#" style="margin:0px;">'+activity.title+'</a></h3>'
 
 	html += '<div>';
-    if (lesson.class_name) {
-    	var customStyles = !lesson.description ? 'style="margin-bottom:30px"': '';
-        html += '<h5 ' + customStyles + '>' + lesson.class_name + '</h5>';
+    if (activity.class_name) {
+    	var customStyles = !activity.description ? 'style="margin-bottom:30px"': '';
+        html += '<h5 ' + customStyles + '>' + activity.class_name + '</h5>';
     }
     
-    if (lesson.description) {
-    	var customStyles = !lesson.class_name ? 'style="padding-top:0px; margin-top:0; margin-bottom:30px; line-height:1"': '';
-       html += '<p ' + customStyles + '>' + lesson.description + '</p>';
+    if (activity.description) {
+    	var customStyles = !activity.class_name ? 'style="padding-top:0px; margin-top:0; margin-bottom:30px; line-height:1"': '';
+       html += '<p ' + customStyles + '>' + activity.description + '</p>';
     }
     
     html += '<h5>Tasks</h5>';
     html += '<ol>';
-    $.each(lesson.tasks, function(i, task) {
+    $.each(activity.tasks, function(i, task) {
         var taskTitle = task[0];
         var taskDescription = task[1];
         var taskLayout = task[2];
@@ -92,35 +76,35 @@ function getLessonHtml(lesson, showTeacher) {
     });
     html += '</ol>';
     
-    if (lesson.activity_type) {
+    if (activity.activity_type) {
     	html += '<h5>Activity Type</h5>';
-    	html += '<ol><li>' + lesson.activity_type + '</li></ol>';
+    	html += '<ol><li>' + activity.activity_type + '</li></ol>';
     }
 
     var utc_offset_minutes = (new Date()).getTimezoneOffset();
     html += '<ul>';
     html += '<li class="left">';
-    html += '<button id="view_lesson_btn_'+lessonCode+'" onclick="goToLesson(\'' + lessonCode + '\')" class="cssbtn smallest">View Activity<span class="view"></span></button>';
+    html += '<button id="view_activity_btn_'+activityCode+'" onclick="goToActivity(\'' + activityCode + '\')" class="cssbtn smallest">View Activity<span class="view"></span></button>';
     html += '</li>';
     html += '<li class="left">';
-    html += '<button id="edit_lesson_btn'+lessonCode+'" onclick="showLessonForm(\'' + lessonCode + '\')" class="cssbtn smallest">Edit Activity<span class="edit"></span></button>';
+    html += '<button id="edit_activity_btn'+activityCode+'" onclick="goToActivityForm(\'' + activityCode + '\')" class="cssbtn smallest">Edit Activity<span class="edit"></span></button>';
     html += '</li>';
     html += '<li class="left">';
-    html += (lesson.is_active) ?
-    	'<button id="stop_lesson_btn_'+lessonCode+'" onclick="stopLesson(\'' + lessonCode + '\')" class="cssbtn smallest">Stop Activity<span class="stop"></span></button>' :
-    	'<button id="start_lesson_btn_'+lessonCode+'" onclick="startLesson(\'' + lessonCode + '\')" class="cssbtn smallest">Start Activity<span class="start"></span></button>';
+    html += (activity.is_active) ?
+    	'<button id="stop_activity_btn_'+activityCode+'" onclick="stopActivity(\'' + activityCode + '\')" class="cssbtn smallest">Stop Activity<span class="stop"></span></button>' :
+    	'<button id="start_activity_btn_'+activityCode+'" onclick="startActivity(\'' + activityCode + '\')" class="cssbtn smallest">Start Activity<span class="start"></span></button>';
     html += '</li>';
     html += '<li class="left">';
-    html += '<button id="clone_lesson_btn_'+lessonCode+'" onclick="cloneLesson(\'' + lessonCode + '\', true)" class="cssbtn smallest">Clone Activity<span></span></button>';
+    html += '<button id="clone_activity_btn_'+activityCode+'" onclick="cloneActivity(\'' + activityCode + '\', true)" class="cssbtn smallest">Clone Activity<span></span></button>';
     html += '</li>';
     html += '<li class="left">';
-    html += '<button id="delete_lesson_btn_'+lessonCode+'" onclick="deleteLesson(\'' + lessonCode + '\')" class="cssbtn smallest">Delete Activity<span class="del"></span></button>';
+    html += '<button id="delete_activity_btn_'+activityCode+'" onclick="deleteActivity(\'' + activityCode + '\')" class="cssbtn smallest">Delete Activity<span class="del"></span></button>';
     html += '</li>';
     html += '<li class="left">';
-    html += '<button id="download_lesson_btn_'+lessonCode+'" onclick="downloadLesson(\'' + lessonCode + '\')" class="cssbtn smallest">Download Data<span class="dl"></span></button>';
+    html += '<button id="download_activity_btn_'+activityCode+'" onclick="downloadActivity(\'' + activityCode + '\')" class="cssbtn smallest">Download Data<span class="dl"></span></button>';
     html += '</li>';
     html += '<li class="left">';
-    html += '<button id="clear_lesson_btn_'+lessonCode+'" onclick="clearLesson(\'' + lessonCode + '\', true);" class="cssbtn smallest">Clear Data<span class="clr"></span></button>';
+    html += '<button id="clear_activity_btn_'+activityCode+'" onclick="clearActivity(\'' + activityCode + '\', true);" class="cssbtn smallest">Clear Data<span class="clr"></span></button>';
     html += '</li>';
     html += '</ul>';
     html += '<div style="clear: both"></div>';
@@ -130,17 +114,17 @@ function getLessonHtml(lesson, showTeacher) {
 }
 
 //=================================================================================
-// Lesson Form UI (create and edit)
+// Activity Form UI (create and edit)
 //=================================================================================
 
-function showLessonForm(lessonCode) {
+function createActivityForm(activityCode) {
 	// NOTE: Existing data not modified when activity is edited.  Should option to clear data be given?
 
 	var pageTitle, activityType, activityName, className, activityDesc;
 	var debug = true;
 	
-	var isNewLesson = lessonCode == undefined || lessonCode == '';
-	if (isNewLesson) {
+	var isNewActivity = activityCode == undefined || activityCode == '';
+	if (isNewActivity) {
 		pageTitle = 'Create activity';
 		var now = getLocalTime();
 		var timestamp = debug ? getNumericTimestamp(getLocalTime()) : '';
@@ -151,14 +135,14 @@ function showLessonForm(lessonCode) {
 	}
 	else {
 		pageTitle = 'Edit activity';
-		var lesson = getLesson(lessonCode);
-		activityType = lesson.activity_type;
-		activityName = lesson.title;
-		className = lesson.class_name;
-		activityDesc = lesson.description;
+		var activity = getActivity(activityCode);
+		activityType = activity.activity_type;
+		activityName = activity.title;
+		className = activity.class_name;
+		activityDesc = activity.description;
 	}
     
-    var html = '<form id="lesson_form" class="wufoo">';
+    var html = '<form id="activity_form" class="wufoo">';
     html += '<ul>';
     html += '<li style="width: 250px !important">';
     html += '<label class="desc">Activity type</label>';
@@ -167,32 +151,32 @@ function showLessonForm(lessonCode) {
     html += '</li>';
     html += '<li>';
     html += '<label class="desc">Activity name</label>';
-    html += '<input type="text" size="50" name="lesson_title" value="'+escapeDoubleQuotesForHtml(activityName)+'" class="field text fn flwid"></input>';
+    html += '<input type="text" size="50" name="activity_title" value="'+htmlEscape(activityName)+'" class="field text fn flwid"></input>';
     html += '</li>';
     html += '<li>';
     html += '<label class="desc">Class name (optional)</label>';
-    html += '<input type="text" size="50" name="class_name" value="'+escapeDoubleQuotesForHtml(className)+'" class="field text fn flwid"></input>';
+    html += '<input type="text" size="50" name="class_name" value="'+htmlEscape(className)+'" class="field text fn flwid"></input>';
     html += '</li>';
     html += '<li>';
     html += '<label class="desc">Activity description (optional)</label>';
-    html += '<textarea rows="4" name="lesson_description" class="field textarea small flwid">'+activityDesc+'</textarea>';
+    html += '<textarea rows="4" name="activity_description" class="field textarea small flwid">'+activityDesc+'</textarea>';
     html += '</li>';
     html += '</ul>';  
     html += '<header class="info"><h3>Tasks</h3></header>';
 	html += '<ul id="tasks">';
-	if (isNewLesson) {
+	if (isNewActivity) {
 		html += getTaskHtml(1, debug ? 'task 1' : '', '', '');
 	}
 	else {
-		for (var i=1; i<=lesson.tasks.length; i++) {
-			html += getTaskHtml(i, lesson.tasks[i-1][0], lesson.tasks[i-1][1], lesson.tasks[i-1][2]);
+		for (var i=1; i<=activity.tasks.length; i++) {
+			html += getTaskHtml(i, activity.tasks[i-1][0], activity.tasks[i-1][1], activity.tasks[i-1][2]);
 		}
 	}
 	html += '</ul>';
 	html += '<input type="hidden" name="max_num_tasks" value="'+MAX_NUM_TASKS+'">';	
-	html += '<input type="hidden" name="action" value="'+(isNewLesson?'create':'edit')+'">';
-	html += '<input type="hidden" id="lesson_code" name="lesson_code" value="'+(isNewLesson?'':lessonCode)+'">';
-	html += '<input type="button" id="create_edit_button" value="'+(isNewLesson?'Create':'Edit')+' Activity" class="cssbtn"></input>&nbsp;&nbsp;'; 
+	html += '<input type="hidden" name="action" value="'+(isNewActivity?'create':'edit')+'">';
+	html += '<input type="hidden" id="activity_code" name="activity_code" value="'+(isNewActivity?'':activityCode)+'">';
+	html += '<input type="button" id="create_edit_button" value="'+(isNewActivity?'Create':'Edit')+' Activity" class="cssbtn"></input>&nbsp;&nbsp;'; 
 	html += '<input type="button" id="cancel_button" value="Cancel" class="cssbtn"></input>';     
     html += '</form>';
 
@@ -202,8 +186,8 @@ function showLessonForm(lessonCode) {
     updateActivityTypes(activityType);
     
     $('#create_edit_button').click(function() {
-    	var lessonCode = $('#lesson_code').val();
-    	createEditLesson(lessonCode);
+    	var activityCode = $('#activity_code').val();
+    	createEditActivity(activityCode);
     });
     
     $('#cancel_button').click(function() {
@@ -215,13 +199,24 @@ function getTaskHtml(i, title, description, layout) {
     // TODO: Make styling of + and - buttons nicer
 	var html = '<li id="task">';
 	html += '<label class="task_title_label desc">Task #'+i+' name</label>';
-	html += '<input type="text" size="50" value="'+escapeDoubleQuotesForHtml(title)+'" class="task_title field text fn flwid"></input>';
+	html += '<input type="text" size="50" value="'+htmlEscape(title)+'" class="task_title field text fn flwid"></input>';
 	html += '<label class="task_description_label desc" style="margin-top:5px">Task #'+i+' description</label>';
 	html += '<textarea class="task_description field textarea smaller flwid">'+description+'</textarea>';
 	html += '<span class="inline"><a class="task_minus">[-]</a> <a class="task_plus">[+]</a></span>';
 	html += '<br/>';
 	html += '</li>';
 	return html;
+}
+
+function updateActivityTypes(currentActivityType) {
+	var activityTypeHtml = '';
+	for (var i=0; i<g_activity_types.length; i++) {
+		var activityType = g_activity_types[i];
+		activityType
+		activityTypeHtml += '<option id="activity_type_'+i+'" value="'+activityType.type+'"'+(currentActivityType==activityType.type?" selected":"")+'>'+activityType.description+'</option>';
+	}
+	$('#activity_type').html(activityTypeHtml);
+	$('#activity_type').selectbox();
 }
 
 function updateTasks() {
@@ -279,23 +274,12 @@ function getTaskIndex(id) {
 	return id.substring(id.lastIndexOf("_")+1, id.length);
 }
 
-function updateActivityTypes(currentActivityType) {
-	var activityTypeHtml = '';
-	for (var i=0; i<g_activity_types.length; i++) {
-		var activityType = g_activity_types[i];
-		activityType
-		activityTypeHtml += '<option id="activity_type_'+i+'" value="'+activityType.type+'"'+(currentActivityType==activityType.type?" selected":"")+'>'+activityType.description+'</option>';
-	}
-	$('#activity_type').html(activityTypeHtml);
-	$('#activity_type').selectbox();
-}
-
 //=================================================================================
-// Lessons Actions
+// Activity Teacher Actions
 //=================================================================================
 
-function createEditLesson(lessonCode) {
-	var data = $('#lesson_form').serialize();
+function createEditActivity(activityCode) {
+	var data = $('#activity_form').serialize();
 	// selectbox not included when form serialized so added manually
 	data += "&activity_type="+$("#activity_type").val();
 	$.ajax( "/teacher_activity", {
@@ -306,7 +290,7 @@ function createEditLesson(lessonCode) {
 		success: function(data) {
 			if (data.status == 1) {
 				$('#error').hide();
-				updateLesson(lessonCode, data.lesson);
+				updateActivity(activityCode, data.activity);
 				returnToParentPage();
 			}
 			else {
@@ -317,20 +301,20 @@ function createEditLesson(lessonCode) {
 	});
 }
 
-function startLesson(lessonCode) {
+function startActivity(activityCode) {
 	$.ajax("/teacher_activity", {
 			type: 'POST',
 			async: false,
 			data: {
 				action: "start",
-				lesson_code: lessonCode,
+				activity_code: activityCode,
 			},
 			dataType: 'json',
 			success: function(data) {
 				if (data.status==1) {
-					var lesson = getLesson(lessonCode);
-					lesson.is_active = true;
-					lesson.stop_time = null;
+					var activity = getActivity(activityCode);
+					activity.is_active = true;
+					activity.stop_time = null;
 					if (typeof updateUI == 'function') {
 					   updateUI();
 					}
@@ -345,26 +329,26 @@ function startLesson(lessonCode) {
 	});
 }
 
-function stopLesson(lessonCode) {
+function stopActivity(activityCode) {
 	$.ajax("/teacher_activity", {
 			type: 'POST',
 			async: false,
 			data: {
 				action: "stop",
-				lesson_code: lessonCode,
+				activity_code: activityCode,
 				logout: true
 			},
 			dataType: 'json',
 			success: function(data) {
 				if (data.status==1) {
-					var lesson = getLesson(lessonCode);
-					lesson.is_active = false;
-					lesson.stop_time = (new Date());
+					var activity = getActivity(activityCode);
+					activity.is_active = false;
+					activity.stop_time = (new Date());
 					if (typeof updateUI == 'function') {
 					   updateUI();
 					}
 					
-					logoutAllStudents("Do you wish to logout all students from this activity?", lessonCode);
+					logoutAllStudents("Do you wish to logout all students from this activity?", activityCode);
 				}
 				else {
 					alert(data);
@@ -376,7 +360,7 @@ function stopLesson(lessonCode) {
 	});
 }
 
-function stopAllLessons() {
+function stopAllActivities() {
 	$.ajax("/teacher_activity", {
 			type: 'POST',
 			async: false,
@@ -388,9 +372,9 @@ function stopAllLessons() {
 			success: function(data) {
 				if (data.status==1) {
 					var stop_time = new Date();
-					for (var i=0; i<g_lessons.length; i++ ) {
-					   g_lessons[i].is_active = false;
-					   g_lessons[i].stop_time = stop_time;
+					for (var i=0; i<g_activities.length; i++ ) {
+						g_activities[i].is_active = false;
+						g_activities[i].stop_time = stop_time;
 					}
 					window.location.hash = '';
 					if (typeof updateUI == 'function') {
@@ -409,27 +393,27 @@ function stopAllLessons() {
 	});
 }
 
-function cloneLesson(lessonCode, updateLessons) {
+function cloneActivity(activityCode, updateActivities) {
 	$.ajax( "/teacher_activity", {
 		type: 'POST',
 		async: false,
 		data: {
 			action: "clone",
-			lesson_code: lessonCode,
+			activity_code: activityCode,
 		},
 		dataType: 'json',
 		success: function(data) {
 			if (data.status == 1) {
-				var clonedLesson = data.clone;
-				if (updateLessons) {
-					g_lessons.push(clonedLesson);
+				var clonedActivity = data.clone;
+				if (updateActivities) {
+					g_activities.push(clonedActivity);
 					if (typeof updateUI == 'function') {
 						updateUI();
 					}
 				}
-				var lesson = getLesson(lessonCode);
-				var msg = lesson.title + ' has been cloned.<br/>';
-				msg += '<a href="/teacher/'+clonedLesson.lesson_code+'#students">View clone activity</a>';
+				var activity = getActivity(activityCode);
+				var msg = activity.title + ' has been cloned.<br/>';
+				msg += '<a href="/teacher/'+clonedActivity.activity_code+'#students">View clone activity</a>';
 				showMessageDialog(msg);
 			}
 		},
@@ -439,20 +423,20 @@ function cloneLesson(lessonCode, updateLessons) {
 	});
 }
 
-function deleteLesson(lessonCode) {
+function deleteActivity(activityCode) {
 	$.ajax("/teacher_activity", {
 		type: 'POST',
 		async: false,
 		data: {
 			action: "delete",
-			lesson_code: lessonCode,
+			activity_code: activityCode,
 		},
 		dataType: 'json',
 		success: function(data) {
 			if (data.status==1) {
-				for( var i=0,l=g_lessons.length; i<l; i++ ) {
-					if( g_lessons[i].lesson_code==lessonCode ) {
-						g_lessons.splice(i,1);
+				for( var i=0,l=g_activities.length; i<l; i++ ) {
+					if( g_activities[i].activity_code==activityCode ) {
+						g_activities.splice(i,1);
 						break;
 					}
 				}
@@ -470,7 +454,7 @@ function deleteLesson(lessonCode) {
 	});
 }
 
-function deleteAllLessons() {
+function deleteAllActivities() {
 	$('#msg_dialog').html("<p>Are you sure you want to delete all your activities?</p>");
 	$('#msg_dialog').dialog({
         autoOpen: true,
@@ -487,7 +471,7 @@ function deleteAllLessons() {
     			dataType: 'json',
     			success: function(data) {
     				if (data.status==1) {
-    					g_lessons = [];
+    					g_activities = [];
     					window.location.hash = '';
     					if (typeof updateUI == 'function') {
     					   updateUI();
@@ -509,27 +493,30 @@ function deleteAllLessons() {
     });
 }
 
-function downloadLesson(lessonCode) {
-	window.location = "/teacher_activity?action=download&lesson_code="+lessonCode+"&utc_offset_minutes="+(new Date()).getTimezoneOffset()
+function downloadActivity(activityCode) {
+	window.location = "/teacher_activity?action=download&activity_code="+activityCode+"&utc_offset_minutes="+(new Date()).getTimezoneOffset()
 }
 
-function downloadAllLessons() {
+function downloadAllActivities() {
 	alert('Not implemented yet');
 }
 
-function clearLesson(lessonCode, showDialog) {
+function clearActivity(activityCode, showDialog) {
 	$.ajax("/teacher_activity", {
 			type: 'POST',
 			async: false,
 			data: {
 				action: "clear",
-				lesson_code: lessonCode
+				activity_code: activityCode
 			},
 			dataType: 'json',
 			success: function(data) {
 				if (data.status==1) {
 					g_students = {};
 					g_task_histories = [];
+					for (var task_idx=0; task_idx<g_activity.tasks.length; task_idx++) {
+						g_task_histories.push([]);
+					}
 					if (typeof updateData == 'function') {
 						updateData();
 					}
@@ -537,7 +524,7 @@ function clearLesson(lessonCode, showDialog) {
 					    initUI();
 					}
 					if (showDialog) {
-					    showMessageDialog('All student data has been cleared from activity '+ lessonCode);
+					    showMessageDialog('All student data has been cleared from activity '+ activityCode);
 					}
 				}
 				else {
@@ -550,31 +537,31 @@ function clearLesson(lessonCode, showDialog) {
 	});
 }
 
-function logoutStudent(studentNickname, lessonCode) {
+function logoutStudent(studentNickname, activityCode) {
 	$.ajax("/teacher_activity", {
 		type: 'POST',
 		async: false,
 		data: {
 			action: "log_out_student",
 			student_nickname: studentNickname,
-			lesson_code: lessonCode
+			activity_code: activityCode
 		},
 		dataType: 'json'
 	});
 }
 
-function logoutAllStudents(warning, lessonCode, whichLessons) {	
+function logoutAllStudents(warning, activityCode, whichActivities) {	
 	if (warning == undefined) {
 		warning = "Are you sure you want to logout all students?"
 	}
 	$('#msg_dialog').html("<p>"+warning+"</p>");
 	
 	var data = { action: "log_out_all_students" };
-	if (lessonCode != undefined) {
-		data.lesson_code = lessonCode;
+	if (activityCode != undefined) {
+		data.activity_code = activityCode;
 	}
-	if (whichLessons != undefined) {
-		data.which_lessons = whichLessons;
+	if (whichActivities != undefined) {
+		data.which_activities = whichActivities;
 	}
 	
 	$('#msg_dialog').dialog({
@@ -611,30 +598,30 @@ function logoutAllStudents(warning, lessonCode, whichLessons) {
 // Navigation
 //=================================================================================
 
-function goToLessonLists() {
+function goToTeacherDashboard() {
 	var currentLocation = ''+window.location;
 	if (currentLocation.indexOf('/teacher_dashboard') == -1) {
 		window.location = '/teacher_dashboard';
 	}
 	else {
 		window.location.hash = '';
-		showLessonLists();
+		createTeacherDashboard();
 	}
 }
 
-function goToLessonForm(lessonCode) {
+function goToActivity(activityCode) {
+	window.location = "/teacher/" + activityCode;
+}
+
+function goToActivityForm(activityCode) {
 	var currentLocation = ''+window.location;
 	if (currentLocation.indexOf('/teacher/') != -1) {
-		window.location = '/teacher_dashboard#' + lessonCode + ':1';
+		window.location = '/teacher_dashboard#' + activityCode + ':1';
 	}
 	else {
-		window.location.hash = lessonCode;
-		showLessonForm(lessonCode);
+		window.location.hash = activityCode;
+		createActivityForm(activityCode);
 	}
-}
-
-function goToLesson(lessonCode) {
-	window.location = "/teacher/" + lessonCode;
 }
 
 function returnToParentPage() {		
@@ -642,11 +629,11 @@ function returnToParentPage() {
 	if (hash != '') hash = hash.substring(1);
 	var hashTokens = hash.split(':');
 	if (hashTokens.length>1 && hashTokens[1]=='1') {
-		var lessonCode = hashTokens[0];
-		goToLesson(lessonCode);
+		var activityCode = hashTokens[0];
+		goToActivity(activityCode);
 	}
 	else {
-		goToLessonLists();
+		goToTeacherDashboard();
 	}
 }
 
@@ -654,35 +641,34 @@ function returnToParentPage() {
 // Utils
 //=================================================================================
 
-function getLesson(lessonCode) {
-	var lesson = null;
-	for (var i=0; i<g_lessons.length; i++ ) {
-		if (g_lessons[i].lesson_code==lessonCode ) {
-			lesson = g_lessons[i];
+function getActivity(activityCode) {
+	var activity = null;
+	for (var i=0; i<g_activities.length; i++ ) {
+		if (g_activities[i].activity_code==activityCode ) {
+			activity = g_activities[i];
 			break;
 		}
 	}
-	return lesson;
+	return activity;
 }
 
-function updateLesson(lessonCode, lessonData) {
+function updateActivity(activityCode, activityData) {
 	var index = -1;
-	var isNewLesson = lessonCode == "";
-	if (isNewLesson) {
-		g_lessons.push(lessonData)
-		index = g_lessons.length-1;
+	var isNewActivity = activityCode == "";
+	if (isNewActivity) {
+		g_activities.push(activityData)
+		index = g_activities.length-1;
 	}
 	else {
-		for (var i=0; i<g_lessons.length; i++ ) {
-			if (g_lessons[i].lesson_code==lessonCode ) {
-				g_lessons[i] = lessonData;
+		for (var i=0; i<g_activities.length; i++ ) {
+			if (g_activities[i].activity_code==activityCode ) {
+				g_activities[i] = activityData;
 				index = i;
 				break;
 			}
 		}
 	}
-	
-	return index != -1 ? g_lessons[index] : null;
+	return index != -1 ? g_activities[index] : null;
 }
 
 function getStudentCount() {

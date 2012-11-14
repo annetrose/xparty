@@ -21,8 +21,8 @@
     function login(event) {
         $.post("/student_login_handler", 
             {
-                "lesson_code": $("#activity_code").val(),
-                "student_nickname": $("#student_nickname").val()
+                "student_nickname": $("#student_nickname_input").val(),
+                "activity_code": $("#activity_code_input").val()
             }, 
             login_callback, 'json');
     }
@@ -57,12 +57,12 @@
             <ul>
             <li>
             <label class="desc">Student name:</label>
-			<input type="text" id="student_nickname" value="" class="login_box field text fn"><br/>
+			<input type="text" id="student_nickname_input" value="" class="login_box field text fn"><br/>
 		    <span class="note">Leave empty to login anonymously</span>
             </li>
             <li>
             <label class="desc">Activity code:</label>
-            <input type="text" id="activity_code" value="" class="login_box field text fn">
+            <input type="text" id="activity_code_input" value="" class="login_box field text fn">
             </li>
             <li>
             <input type="button" id="login_button" value="Login" class="cssbtn">

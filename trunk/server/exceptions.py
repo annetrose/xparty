@@ -25,7 +25,7 @@ class ActivityAccessDeniedError(XPartyException):
     def check(user, activity):
         is_admin = model_access.is_admin_logged_in(user)
         is_teacher_activity = model_access.is_teacher_logged_in(user) and model_access.is_same_person(activity.teacher, user) if activity is not None else False
-        is_student_activity = model_access.is_student_logged_in(user) and model_access.is_same_lesson(activity, user.lesson) if activity is not None else False
+        is_student_activity = model_access.is_student_logged_in(user) and model_access.is_same_activity(activity, user.activity) if activity is not None else False
         can_access_activity = is_admin or is_teacher_activity or is_student_activity
         return not can_access_activity
     
@@ -33,8 +33,8 @@ class ActivityNotFoundError(XPartyException):
     error = "Activity not found"
     
     @staticmethod 
-    def check(lesson):
-        return lesson is None
+    def check(activity):
+        return activity is None
   
 class NotAnActiveActivityError(XPartyException):
     error = "Activity not active"

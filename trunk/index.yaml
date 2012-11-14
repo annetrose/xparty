@@ -10,6 +10,12 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
+- kind: Activity
+  properties:
+  - name: deleted_time
+  - name: teacher
+  - name: title
+
 - kind: Lesson
   properties:
   - name: deleted_time
@@ -25,6 +31,17 @@ indexes:
   properties:
   - name: lesson
   - name: nickname
+
+- kind: StudentAction
+  properties:
+  - name: activity
+  - name: student
+  - name: timestamp
+
+- kind: StudentAction
+  properties:
+  - name: activity
+  - name: timestamp
 
 - kind: StudentAction
   properties:
