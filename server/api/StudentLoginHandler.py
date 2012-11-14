@@ -15,36 +15,35 @@ import random, string
 class StudentLoginHandler(XPartyHandler):    
     def post(self):
         try:   
-            # TODO: Is this needed?     
             self.init_user_context("student")
             student_nickname = self.request.get("student_nickname")
             student_nickname = " ".join(student_nickname.split())
             anonymous = True if not student_nickname else False
-            lesson_code = self.request.get("lesson_code")
+            activity_code = self.request.get("activity_code")
                                 
-            # Retrieve lesson from datastore
-            # - If lesson does not exist, this will return None.
-            # - If lesson existed but is disabled, it will return the lesson, but lesson.is_active will be False.
-            # - If lesson existed but was deleted (hidden), it will return the lesson, but lesson.is_deleted will be True.
-            #   (Deleting lessons is done lazily.  Actually, they are merely hidden from the teacher's view.)
-            lesson = model_access.get_lesson(lesson_code) if lesson_code != "" else None
+            # Retrieve activity from datastore
+            # - If activity does not exist, this will return None.
+            # - If activity existed but is disabled, it will return the activity, but activity.is_active will be False.
+            # - If activity existed but was deleted (hidden), it will return the activity, but activity.is_deleted will be True.
+            #   (Deleting activities is done lazily.  Actually, they are merely hidden from the teacher's view.)
+            activity = model_access.get_activity(activity_code) if activity_code != "" else None
              
-            if not lesson_code:
+            if not activity_code:
                 raise exceptions.XPartyException("Please enter an activity code.")
             
-            # Lesson not found
-            if exceptions.ActivityNotFoundError.check(lesson):
+            # Activity not found
+            if exceptions.ActivityNotFoundError.check(activity):
                 raise exceptions.ActivityNotFoundError("Please check the activity code.")
 
-            # Lesson is no longer active or was deleted (hidden)
-            elif exceptions.NotAnActiveActivityError.check(lesson):
+            # Activity is no longer active or was deleted (hidden)
+            elif exceptions.NotAnActiveActivityError.check(activity):
                 raise exceptions.NotAnActiveActivityError("This activity is finished.")
                         
             else:                
                 # Fetch student from datastore
-                # Might return None if nobody has ever logged in with this nickname+lesson combination        
+                # Might return None if nobody has ever logged in with this nickname+activity combination        
                 if student_nickname:
-                    student = model_access.get_student(student_nickname, lesson_code)
+                    student = model_access.get_student(student_nickname, activity_code)
                     
                 # If no student nickname, generate an anonymous one
                 else:
@@ -52,7 +51,7 @@ class StudentLoginHandler(XPartyHandler):
                     alphabet = string.letters + string.digits
                     for i in range(10):
                         anonymous_nickname = "".join(random.choice(alphabet) for j in range(10))                    
-                        anonymous_student = model_access.get_student(anonymous_nickname, lesson_code)
+                        anonymous_student = model_access.get_student(anonymous_nickname, activity_code)
                         if anonymous_student is None:
                             student_nickname = anonymous_nickname
                             break
@@ -81,7 +80,7 @@ class StudentLoginHandler(XPartyHandler):
                         student = model_access.create_student({
                             'student_nickname': student_nickname,
                             'anonymous':        anonymous,
-                            'lesson':           lesson,
+                            'activity':         activity,
                             'session_sid':      session.sid
                         })
         

@@ -2,43 +2,11 @@
 # XParty - A Framework for Building Tools to Support Social Learning in Synchronous Environments
 # Authors: Ben Bederson - www.cs.umd.edu/~bederson
 #          Alex Quinn -- www.alexquinn.org
+#          Anne Rose -- www.cs.umd.edu/hcil/members/arose
 #          University of Maryland, Human-Computer Interaction Lab - www.cs.umd.edu/hcil
 # Date: Originally created July 2011
 # License: Apache License 2.0 - http://www.apache.org/licenses/LICENSE-2.0
 */
-
-//=================================================================================
-// URLs
-//=================================================================================
-
-function getSpecificURLParameter(url, theArgName) {
-	/* Thanks to  Eric Scheid ("ironclad") for this snippet, which was downloaded from ...
-	 * http://www.evolt.org/article/Javascript_to_Parse_URLs_in_the_Browser/17/14435/?format=print
-	 * ... on 4-27-2010 ...
-	 * ... and adapted by Alex Quinn.
-	 */
-
-	var queryString = url.slice(url.indexOf("?"));
-	var sArgs = queryString.slice(1).split('&');
-    var r = '';
-    for (var i = 0; i < sArgs.length; i++) {
-        if (sArgs[i].slice(0,sArgs[i].indexOf('=')) == theArgName) {
-            r = sArgs[i].slice(sArgs[i].indexOf('=')+1);
-            break;
-        }
-    }
-    r = (r.length > 0 ? unescape(r).split(',') : '');
-	if (r.length==1) {
-		r = r[0];
-	}
-	else if (r.length==0) {
-		r = '';
-	}
-	else {
-		r = '';
-	}
-	return r;
-}
 
 //=================================================================================
 // Time
@@ -83,46 +51,54 @@ function getNumericTimestamp(ts) {
 }
 
 //=================================================================================
-// Strings
+// URL / HTML
 //=================================================================================
 
-function escapeDoubleQuotesForHtml(str) {
-	return str.replace(/"/g, "&quot;");
-}
+function getSpecificURLParameter(url, theArgName) {
+	/* Thanks to  Eric Scheid ("ironclad") for this snippet, which was downloaded from ...
+	 * http://www.evolt.org/article/Javascript_to_Parse_URLs_in_the_Browser/17/14435/?format=print
+	 * ... on 4-27-2010 ...
+	 * ... and adapted by Alex Quinn.
+	 */
 
-function escapeForHtml(s) {
-	return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-}
-
-function sortInPlaceAlphabetically(items, propertyName) {		
-	items.sort(function(a,b) {
-		var aValue = a[propertyName];
-		var bValue = b[propertyName];
-		
-		// check if property is an array
-		// if so, convert to comma-separated sorted string of values
-		if ($.isArray(aValue)) {
-			aValue = aValue.sort().join(', ');
-			bValue = bValue.sort().join(', ');
-		}
-			
-		// case insensitive sort
-		var aValue = aValue.toLowerCase();
-		var bValue = bValue.toLowerCase();
-		return (aValue > bValue ? 1 : (aValue < bValue ? -1 : 0));
-	});
-}
-
-//=================================================================================
-// Data Structures
-//=================================================================================
-
-function dict2Array(dict) {
-	var dictArray = [];
-	for (key in dict) {
-		dictArray.push(dict[key]);
+	var queryString = url.slice(url.indexOf("?"));
+	var sArgs = queryString.slice(1).split('&');
+    var r = '';
+    for (var i = 0; i < sArgs.length; i++) {
+        if (sArgs[i].slice(0,sArgs[i].indexOf('=')) == theArgName) {
+            r = sArgs[i].slice(sArgs[i].indexOf('=')+1);
+            break;
+        }
+    }
+    r = (r.length > 0 ? unescape(r).split(',') : '');
+	if (r.length==1) {
+		r = r[0];
 	}
-	return dictArray;
+	else if (r.length==0) {
+		r = '';
+	}
+	else {
+		r = '';
+	}
+	return r;
+}
+
+function htmlEscape(str) {
+	return String(str)
+    	.replace(/&/g, '&amp;')
+    	.replace(/"/g, '&quot;')
+    	.replace(/'/g, '&#39;')
+    	.replace(/</g, '&lt;')
+    	.replace(/>/g, '&gt;');
+}
+
+function htmlUnescape(str) {
+	return String(str)
+    	.replace(/&amp;/g, '&')
+    	.replace(/&quot;/g, '"')
+    	.replace(/&#39;/g, "'")
+    	.replace(/&lt;/g, "<")
+    	.replace(/&gt;/g, ">");
 }
 
 //=================================================================================

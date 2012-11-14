@@ -7,10 +7,10 @@
     var ANSWER_PANE = "answer";
     g_customDataPanes[ANSWER_PANE] = { title: 'Answers' };
     
-    function loadCustomPane(paneKey, div) {
+    function load_custom_pane(paneKey, div) {
         switch(paneKey) {
             case ANSWER_PANE:
-                loadAnswerPane(div);
+                load_answer_pane(div);
                 break;
             default:
                 div.html("");
@@ -18,9 +18,23 @@
         }
     }
     
-    function loadAnswerPane(div) {
+    function update_custom_pane(paneKey, action) {
+        switch(paneKey) {
+            case ANSWER_PANE:
+                update_answer_pane(action);
+                break;
+            default:
+                break;
+        }
+    }
+    
+    //=================================================================================
+    // Answer Pane
+    //=================================================================================
+
+    function load_answer_pane(div) {
         var accumulator = new DataAccumulator();
-        var taskIdx = selectedTaskIdx();
+        var taskIdx = selected_task_idx();
         var taskHistory = g_task_histories[taskIdx];
         var answers = [];
         for (var i=0; i<taskHistory.length; i++) {
@@ -32,22 +46,45 @@
         }
            
         var html = '<h3 id="pane_title" style="margin-bottom:10px">'+g_customDataPanes[ANSWER_PANE].title+'</h3>';
+        html += '<div id="tag_cloud" class="tag_cloud"></div>';
         html += '<div id="data_list"></div>';
         div.html(html);
     
+        var tagcloud = new TagCloud($("#tag_cloud"), accumulator);
+        tagcloud.show();
+        
         var accordion = new AnswerAccordion($("#data_list"), accumulator);
-        accordion.show();
+        accordion.show(false);
+    }
+    
+    function update_answer_pane(action) {
+        var is_answer_action = action.action_type == "answer";
+        if (g_accordion && is_answer_action) {
+            var item = new DataItem(action.action_data.answer, action);
+            g_accordion.accumulator.add(item);
+            g_accordion.show();
+            g_tagcloud.show(false);
+        }
     }
     
     function AnswerAccordion(div, accumulator) {
-        AccordionList.call(this, div, accumulator)
+        AccordionList.call(this, div, accumulator);
     }
-    
     AnswerAccordion.prototype = Object.create(AccordionList.prototype);
-
-    AnswerAccordion.prototype.expandedItem = function(item, i) {
-        var html = "<h5>Students</h5>\n";
-        html += "list of students goes here";
+    
+    AnswerAccordion.prototype.expandedItem = function(key, i) {
+        var student_dict = {};
+        var items = this.accumulator.dict[key];
+        for (var j=0; j<items.length; j++) {
+            var data = items[j].getData();
+            var nickname = data["student_nickname"];
+            if (typeof(student_dict[nickname]) == "undefined") {
+                student_dict[nickname] = [];
+            }
+            student_dict[nickname].push(data);
+        }
+        
+        var html = get_student_list_html(student_dict);
         return html;
     }
        

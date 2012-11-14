@@ -1,0 +1,8 @@
+    
+// Initialize activity data
+var g_activities = [];
+{% for activity in activities %}
+var activity = {{ activity|safe }};
+g_activities.push(activity);
+{% endfor %}
+{% if not list %}g_activity = g_activities[0];{% endif %}

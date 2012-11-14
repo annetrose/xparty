@@ -23,8 +23,8 @@ class StudentInfoHandler(XPartyHandler):
                 response_data = { 
                     "status":           1, 
                     "student":          self.user.to_dict(), 
-                    "lesson":           self.user.lesson.to_dict(),
-                    "task_history":     model_access.get_student_actions(self.user.lesson, task_idx, self.user)
+                    "activity":         self.user.activity.to_dict(),
+                    "task_history":     model_access.get_student_actions(self.user.activity, task_idx=task_idx, student=self.user)
                 }            
                 self.write_response_as_json(response_data)
             

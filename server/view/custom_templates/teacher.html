@@ -5,8 +5,8 @@
   <title>XParty - Teacher View</title>
   <link rel="stylesheet" type="text/css" href="/css/task_chooser.css"></link>
   <script type="text/javascript" src="/js/common.js?version=091812"></script>
-  <script type="text/javascript" src="/js/lesson.js?version=091812"></script>
-  <script type="text/javascript" src="/js/activity_data.js?version=091812"></script>
+  <script type="text/javascript" src="/js/activity.js?version=091812"></script>
+  <script type="text/javascript" src="/js/data_pane.js?version=091812"></script>
   <script type="text/javascript" src="/js/teacher.js?version=091812"></script>
   <script type="text/javascript" src="/js/task_chooser.js"></script>
   <script type="text/javascript" src="/js/jquery.tagcloud.js"></script>
@@ -18,12 +18,12 @@
   // <![CDATA[
     var TOKEN = "{{ token }}";
     {{ None|init_activity_types_js }}
-    {{ lesson|init_lesson_js }}
+    {{ activity|init_activity_js }}
     {{ students|init_students_js }}
     {{ task_histories|init_task_histories_js }}
                 
     $(document).ready(function() { 
-       initializeTeacher();
+       initTeacher();
     });
         
   // ]]
@@ -41,8 +41,8 @@
   <div id="data_container">
 	<header class="info">
 		<h2>Activity <span id="inactive" style="color:red; text-transform:uppercase; display:none" class="small">Inactive</span></h2>
-		<h5 id="lesson_title"></h5>
-		<h6>Activity code: <span id="lesson_code"></span></h6>
+		<h5 id="activity_title"></h5>
+		<h6>Activity code: <span id="activity_code"></span></h6>
 	</header>
 	<br/>
     <div id="data_pane"></div>

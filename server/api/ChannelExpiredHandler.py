@@ -10,8 +10,8 @@ from XPartyHandler import XPartyHandler
 from server import channel
 
 class ChannelExpiredHandler(XPartyHandler):
-    def post(self, lesson_code):
+    def post(self, activity_code):
         self.init_user_context()
-        token = channel.create_channel(self.user, lesson_code)
+        token = channel.create_channel(self.user, activity_code)
         self.write_response_as_json({ "status":1, "token": token })
         

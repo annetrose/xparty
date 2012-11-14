@@ -27,10 +27,10 @@ class Teacher(Person):
         properties_to_show = [self.nickname]
         return "{0}({1})".format(self.__class__.__name__, repr(tuple(properties_to_show)))
 
-class Lesson(db.Model):
+class Activity(db.Model):
     # PROPERTIES
     activity_type = db.StringProperty()
-    lesson_code = db.StringProperty()
+    activity_code = db.StringProperty()
     teacher = db.ReferenceProperty(Teacher)
     title = db.StringProperty()
     description = db.StringProperty(multiline=True)
@@ -48,7 +48,7 @@ class Lesson(db.Model):
     
     def to_dict(self):
         return {
-            'lesson_code':      self.lesson_code,
+            'activity_code':    self.activity_code,
             'activity_type':    self.activity_type,
             'teacher_nickname': self.teacher.nickname,
             'title':            self.title,
@@ -67,8 +67,8 @@ class Lesson(db.Model):
 class Student(Person):
     # PROPERTIES
     nickname = db.StringProperty()
-    lesson = db.ReferenceProperty(Lesson)
     anonymous = db.BooleanProperty(default=False)
+    activity = db.ReferenceProperty(Activity)
     latest_login_timestamp = db.DateTimeProperty()
     latest_logout_timestamp = db.DateTimeProperty()
     session_sid = db.StringProperty()
@@ -89,14 +89,14 @@ class Student(Person):
         return datetime.datetime.now() > self.latest_login_timestamp + settings.STUDENT_SESSION_TIMEOUT
 
     @classmethod
-    def make_key_name(self, student_nickname, lesson_code):
-        return "::".join((student_nickname, lesson_code))
+    def make_key_name(self, student_nickname, activity_code):
+        return "::".join((student_nickname, activity_code))
     
     def to_dict(self):
         return {
             'nickname':                 self.nickname,
-            'lesson_code':              self.lesson.lesson_code,
             'anonymous':                self.anonymous,
+            'activity_code':            self.activity.activity_code,
             'first_login_timestamp':    self.first_login_timestamp,
             'latest_login_timestamp':   self.latest_login_timestamp,
             'latest_logout_timestamp':  self.latest_logout_timestamp,
@@ -110,7 +110,7 @@ class Student(Person):
 class StudentAction(db.Model):
     # PROPERTIES
     student = db.ReferenceProperty(Student)
-    lesson = db.ReferenceProperty(Lesson)
+    activity = db.ReferenceProperty(Activity)
     task_idx = db.IntegerProperty()
     action_type = db.StringProperty()
     action_description = db.StringProperty()
@@ -124,12 +124,12 @@ class StudentAction(db.Model):
     def to_dict(self):
         return {
             'student_nickname':     self.student.nickname,
-            'lesson_code':          self.lesson.lesson_code,
+            'activity_code':        self.activity.activity_code,
             'task_idx':             self.task_idx,
             'action_type':          self.action_type,
             'action_description':   self.action_description,
             'action_data':          self.action_data,
-            'timestamp':            self.timestamp.strftime("%B %d, %Y %H:%M:%S %Z")
+            'timestamp':            self.timestamp
         }
             
     def __repr__(self):

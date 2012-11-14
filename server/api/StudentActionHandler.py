@@ -13,7 +13,7 @@ from server.utils import helpers
 
 # TODO: Make copyright statements consistent
 # TODO: Work on format
-# Send message to teacher using a HTTP POST request for specified task in current lesson
+# Send message to teacher using a HTTP POST request for specified task in current activity
 # URI: /student_message
 # Request Data: 
 #     task_idx (zero-based task index)
@@ -27,7 +27,7 @@ class StudentActionHandler(XPartyHandler):
             if exceptions.NotAnAuthenticatedStudentError.check(self.user):
                 raise exceptions.NotAnAuthenticatedStudentError("You have been logged out.  Please log in again to continue.")
     
-            elif exceptions.NotAnActiveActivityError.check(self.user.lesson):
+            elif exceptions.NotAnActiveActivityError.check(self.user.activity):
                 raise exceptions.NotAnActiveActivityError()
             
             else:
@@ -35,8 +35,8 @@ class StudentActionHandler(XPartyHandler):
                 action_type = self.request.get("action_type")
                 action_description = self.request.get("action_description")
                 action_data = helpers.from_json(self.request.get("action_data", ""))
-                model_access.add_student_action(self.user, task_idx, action_type, action_description, action_data)
-                self.write_response_as_json({ "status": 1 })
+                action = model_access.add_student_action(self.user, task_idx, action_type, action_description, action_data)
+                self.write_response_as_json({ "status": 1, "action": action.to_dict() })
         
         except exceptions.XPartyException as e:
             e.write_response_as_json(self)

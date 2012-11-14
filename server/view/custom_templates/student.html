@@ -13,11 +13,12 @@
   <script type="text/javascript">
   // <![CDATA[
     var TOKEN = "{{ token }}";
-    {{ lesson|init_lesson_js }}
+    {{ activity|init_activity_js }}
     {{ student|init_student_js }}
+    {{ task_histories|init_task_histories_js }}
 
     $(document).ready(function() {
-        initializeStudent();
+        initStudent();
     });
   // ]]>
   </script>
@@ -37,7 +38,7 @@
 {% endblock %}
 
 {% block content_area %}
-  <h3 style="margin-bottom:10px;"><span id="lesson_title"></span>&nbsp;&nbsp;<span class="small" style="font-weight:normal; color:grey">#<span id="lesson_code"></span></span></h3>
+  <h3 style="margin-bottom:10px;"><span id="activity_title"></span>&nbsp;&nbsp;<span class="small" style="font-weight:normal; color:grey">#<span id="activity_code"></span></span></h3>
   <div id="task_gui">
     {% block task_gui %}
     {% endblock %}

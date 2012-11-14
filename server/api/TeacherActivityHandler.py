@@ -17,8 +17,8 @@ class TeacherActivityHandler(XPartyHandler):
         try:       
             self.init_user_context("teacher") 
             action = self.request.get("action", "")
-            lesson_code = self.request.get("lesson_code", "")
-            lesson = model_access.get_lesson(lesson_code) if lesson_code != "" else None
+            activity_code = self.request.get("activity_code", "")
+            activity = model_access.get_activity(activity_code) if activity_code != "" else None
             response_data = { "status": 1 }
                     
             # Actions that only require an authenticated user
@@ -26,56 +26,56 @@ class TeacherActivityHandler(XPartyHandler):
                 raise exceptions.NotAnAuthenticatedTeacherError()
                                                
             elif action == "create":
-                response_data = self.create_edit_lesson()
+                response_data = self.create_edit_activity()
     
             elif action == "stop_all":
-                lessons = model_access.get_lessons(self.user)
-                for lesson in lessons:
-                    model_access.stop_lesson(lesson)
+                activities = model_access.get_activities(self.user)
+                for activity in activities:
+                    model_access.stop_activity(activity)
              
             elif action == "delete_all":
-                lessons = model_access.get_lessons(self.user)
-                for lesson in lessons:
-                    model_access.delete_lesson(lesson)
-                    self.log_out_all_students(lesson)
+                activities = model_access.get_activities(self.user)
+                for activity in activities:
+                    model_access.delete_activity(activity)
+                    self.log_out_all_students(activity)
             
             elif action == "log_out_all_students":                    
-                all_students_for_all_teachers = self.request.get("which_lessons", "0") == "1"
+                all_students_for_all_teachers = self.request.get("which_activities", "0") == "1"
                 if exceptions.NotAnAuthenticatedAdminError.check(self.user):
                     raise exceptions.NotAnAuthenticatedAdminError()
-                self.log_out_all_students(lesson, all_students_for_all_teachers)
+                self.log_out_all_students(activity, all_students_for_all_teachers)
                     
             # Actions that require an authenticated user and permission to access to specified activity
-            elif exceptions.ActivityNotFoundError.check(lesson):
+            elif exceptions.ActivityNotFoundError.check(activity):
                 raise exceptions.ActivityNotFoundError()
               
-            elif exceptions.ActivityAccessDeniedError.check(self.user, lesson):
+            elif exceptions.ActivityAccessDeniedError.check(self.user, activity):
                 raise exceptions.ActivityAccessDeniedError()
         
             elif action == "edit":
-                response_data = self.create_edit_lesson(lesson)
+                response_data = self.create_edit_activity(activity)
     
             elif action == "start":
-                model_access.start_lesson(lesson)
+                model_access.start_activity(activity)
                            
             elif action == "stop":
-                model_access.stop_lesson(lesson)
+                model_access.stop_activity(activity)
                       
             elif action == "clone":
-                clone = model_access.copy_lesson(lesson)
+                clone = model_access.copy_activity(activity)
                 response_data["clone"] = clone.to_dict();
                   
             elif action == "clear":
-                model_access.clear_lesson(lesson)
-                self.log_out_all_students(lesson)
+                model_access.clear_activity(activity)
+                self.log_out_all_students(activity)
     
             elif action == "delete":                    
-                model_access.delete_lesson(lesson)
-                self.log_out_all_students(lesson)
+                model_access.delete_activity(activity)
+                self.log_out_all_students(activity)
                 
             elif action == "log_out_student":
                 student_nickname = self.request.get("student_nickname")
-                student = model_access.get_student(student_nickname=student_nickname, lesson_code=lesson_code)
+                student = model_access.get_student(student_nickname=student_nickname, activity_code=activity_code)
                 model_access.log_out_person(student)
             
             else:
@@ -90,16 +90,16 @@ class TeacherActivityHandler(XPartyHandler):
         try:      
             self.init_user_context("teacher")
             action = self.request.get("action", "")
-            lesson_code = self.request.get("lesson_code", "")
-            lesson = model_access.get_lesson(lesson_code) if lesson_code != "" else None
+            activity_code = self.request.get("activity_code", "")
+            activity = model_access.get_activity(activity_code) if activity_code != "" else None
 
             if exceptions.NotAnAuthenticatedTeacherError.check(self.user):
                 raise exceptions.NotAnAuthenticatedTeacherError()
             
-            elif exceptions.ActivityNotFoundError.check(lesson):
+            elif exceptions.ActivityNotFoundError.check(activity):
                 raise exceptions.ActivityNotFoundError()
             
-            elif exceptions.ActivityAccessDeniedError.check(self.user, lesson):
+            elif exceptions.ActivityAccessDeniedError.check(self.user, activity):
                 raise exceptions.ActivityAccessDeniedError()
                     
             if action == "download":
@@ -107,17 +107,17 @@ class TeacherActivityHandler(XPartyHandler):
                 # response written as file
                 utc_offset_minutes = int(self.request.get("utc_offset_minutes", 0))
                 utc_offset = datetime.timedelta(minutes=utc_offset_minutes)
-                self.download_lesson(lesson, utc_offset)                
+                self.download_activity(activity, utc_offset)                
             else:
                 raise exceptions.UnknownActionError()
                 
         except exceptions.XPartyException as e:
             e.write_response_as_json(self)
               
-    def create_edit_lesson(self, lesson=None):
+    def create_edit_activity(self, activity=None):
         activity_type = self.request.get("activity_type")
-        lesson_title = self.request.get("lesson_title")
-        lesson_description = self.request.get("lesson_description")
+        activity_title = self.request.get("activity_title")
+        activity_description = self.request.get("activity_description")
         class_name = self.request.get("class_name")
         task_infos = []
         for task_num in range(1, int(self.request.get("max_num_tasks", "1"))+1):
@@ -127,24 +127,24 @@ class TeacherActivityHandler(XPartyHandler):
                 task_infos.append((task_title, task_description))
         tasks_json = helpers.to_json(task_infos)
         
-        if (len(activity_type) == 0) or (len(lesson_title) == 0) or (len(task_infos) == 0):
+        if (len(activity_type) == 0) or (len(activity_title) == 0) or (len(task_infos) == 0):
             return { "status": 0, "msg": "Activity type, activity name, and one task are required." }
          
         else: 
             data = {
                 'activity_type' : activity_type,
-                'title'         : lesson_title,
+                'title'         : activity_title,
                 'class_name'    : class_name,
-                'description'   : lesson_description,
+                'description'   : activity_description,
                 'tasks_json'    : tasks_json
             }   
-            if lesson is None:
+            if activity is None:
                 data["teacher"] = self.user
                 
-            lesson = model_access.create_lesson(data) if lesson is None else model_access.update_lesson(lesson, data)
-            return { "status": 1, "lesson": lesson.to_dict() }
+            activity = model_access.create_activity(data) if activity is None else model_access.update_activity(activity, data)
+            return { "status": 1, "activity": activity.to_dict() }
     
-    def download_lesson(self, lesson, utc_offset):
+    def download_activity(self, activity, utc_offset):
         headers = (
             "Timestamp",
             "Student",
@@ -157,13 +157,13 @@ class TeacherActivityHandler(XPartyHandler):
         excel_writer = UnicodeWriter(report_buffer, "excel-tab", "utf8")
         excel_writer.writerow(headers)
 
-        # TODO: Currently activity data is imported as json string 
-        # There are extra quotes when viewed as plain text. 
-        # It is correct when imported in Excel.
+        # TODO: Currently activity data is imported as a json string. 
+        # There are extra quotes when viewed as plain text, 
+        # but it is correct when imported in Excel.
         # How should it be stored?
         
-        task_titles = tuple(task_info[0] for task_info in lesson.tasks)
-        actions = model_access.get_student_actions(lesson)
+        task_titles = tuple(task_info[0] for task_info in activity.tasks)
+        actions = model_access.get_student_actions(activity)
         for action in actions:
             student = action.student
             timestamp = (action.timestamp - utc_offset).strftime("%m/%d/%Y %H:%M:%S")
@@ -184,12 +184,12 @@ class TeacherActivityHandler(XPartyHandler):
         report_buffer.close()
 
         content_type = "text/tab-separated-values"
-        filename = "xparty_activity_%s_as_of_%s.txt"%(lesson.lesson_code, time.strftime("%Y%m%d-%H%M%S"))
+        filename = "xparty_activity_%s_as_of_%s.txt"%(activity.activity_code, time.strftime("%Y%m%d-%H%M%S"))
         self.write_response_as_file(encoded_content=report_text, content_type=content_type, filename=filename, encoding="UTF-8")
         
-    def log_out_all_students(self, lesson=None, all_students_for_all_teachers=False):
-        if lesson is not None:
-            students = model_access.get_students(lesson=lesson, only_logged_in=True)
+    def log_out_all_students(self, activity=None, all_students_for_all_teachers=False):
+        if activity is not None:
+            students = model_access.get_students(activity=activity, only_logged_in=True)
         elif all_students_for_all_teachers:
             students = model_access.get_students(only_logged_in=True)
         else:

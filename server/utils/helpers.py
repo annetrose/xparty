@@ -22,12 +22,13 @@ def from_json(data):
 def _json_handler(o):
     from datetime import datetime
     if isinstance(o, datetime):
-        return "(new Date(%d, %d, %d, %d, %d, %d))"%(
-            o.year,
-            o.month,  
-            o.day,
-            o.hour,
-            o.minute,
-            o.second)
+#        return "(new Date(%d, %d, %d, %d, %d, %d))"%(
+#            o.year,
+#            o.month-1,  
+#            o.day,
+#            o.hour,
+#            o.minute,
+#            o.second)
+        return o.strftime("%B %d, %Y %H:%M:%S")
     else:
         raise TypeError(repr(o))

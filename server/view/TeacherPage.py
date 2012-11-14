@@ -13,32 +13,31 @@ from server import model_access
 from server.utils import helpers
 
 class TeacherPage(XPartyView):    
-    def get(self, lesson_code):
+    def get(self, activity_code):
         try:
             self.init_user_context("teacher")
-            lesson = model_access.get_lesson(lesson_code)
+            activity = model_access.get_activity(activity_code)
         
             if exceptions.NotAnAuthenticatedTeacherError.check(self.user):
                 raise exceptions.NotAnAuthenticatedTeacherError()
 
-            if exceptions.ActivityNotFoundError.check(lesson):
+            if exceptions.ActivityNotFoundError.check(activity):
                 raise exceptions.ActivityNotFoundError()
             
-            if exceptions.WrongPersonError.check(lesson.teacher, self.user):
+            if exceptions.WrongPersonError.check(activity.teacher, self.user):
                 raise exceptions.WrongPersonError()
 
             template_values = {
-                'token'              : channel.create_channel(person=self.user, lesson_code=lesson_code),
-                'lesson'             : helpers.to_json(lesson.to_dict()),
-                'students'           : model_access.get_students(lesson=lesson, as_json=True),
-                'task_histories'     : model_access.get_student_actions(lesson=lesson, group_by_task=True, as_json=True)
-            }            
-            
-            teacher_template = self.get_custom_template("teacher", lesson)
+                'token'              : channel.create_channel(person=self.user, activity_code=activity_code),
+                'activity'           : helpers.to_json(activity.to_dict()),
+                'students'           : model_access.get_students(activity=activity, as_json=True),
+                'task_histories'     : model_access.get_student_actions(activity, group_by_task=True, as_json=True)
+            }
+            teacher_template = self.get_custom_template("teacher", activity)
             self.write_response_with_template(teacher_template, template_values, custom=True)
 
         except (exceptions.NotAnAuthenticatedTeacherError, exceptions.WrongPersonError):
             self.redirect_to_teacher_login()
 
         except exceptions.ActivityNotFoundError:
-            self.redirect_with_msg(msg="Lesson not found. Please choose a lesson to continue.", dst="/teacher_dashboard")
+            self.redirect_with_msg(msg="Activity not found. Please choose an activity to continue.", dst="/teacher_dashboard")
