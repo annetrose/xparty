@@ -94,7 +94,7 @@ function updateChannelToken(data) {
 
 function on_task_changed(taskIdx) {
 	// on_task_changed is called from js/task_chooser.js
-	var task = g_activities[0].tasks[taskIdx];
+	var task = g_activity.tasks[taskIdx];
 	var description = (task[1] == '') ? '(none)' : task[1];
 	$('#task_description').html(description);
 	

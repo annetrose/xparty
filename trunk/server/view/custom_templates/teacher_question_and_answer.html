@@ -54,16 +54,26 @@
         tagcloud.show();
         
         var accordion = new AnswerAccordion($("#data_list"), accumulator);
-        accordion.show(false);
+        accordion.show();
     }
     
     function update_answer_pane(action) {
-        var is_answer_action = action.action_type == "answer";
-        if (g_accordion && is_answer_action) {
-            var item = new DataItem(action.action_data.answer, action);
-            g_accordion.accumulator.add(item);
-            g_accordion.show();
-            g_tagcloud.show(false);
+        if (g_accordion) {
+            var is_action_defined = typeof(action) != "undefined";
+            var is_answer_action = is_action_defined && action.action_type == "answer"; 
+        
+            // if new answer, add to accumulator
+            if (is_answer_action) {
+                var item = new DataItem(action.action_data.answer, action);
+                g_accordion.accumulator.add(item);
+            }
+            
+            // if new answer, redraw pane
+            // if no action, redraw pane (e.g., sort or filter)
+            if (!is_action_defined || is_answer_action) {
+                g_accordion.show();
+                g_tagcloud.show();
+            }          
         }
     }
     
