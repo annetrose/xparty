@@ -163,9 +163,11 @@ function update_pane(action) {
 			update_history_pane(action);
 			break;
 		default:
-			var task_idx = action.action_data.task_idx;
-			if (typeof(update_custom_pane) == "function" && task_idx == selected_task_idx()) {
-				update_custom_pane(g_currentPane, action);
+			if (typeof(update_custom_pane) == "function") {	
+				var task_idx = typeof(action) != "undefined" ? action.action_data.task_idx : -1;
+				if (typeof(action) == "undefined" || task_idx == selected_task_idx()) {
+					update_custom_pane(g_currentPane, action);
+				}
 			}
 			break;
 	}
@@ -311,13 +313,13 @@ function handle_action(action) {
 // UI Tasks
 //=================================================================================
 
-function onTaskChanged(taskIdx) {
-	// onTaskChanged is called from js/task_chooser.js
+function on_task_changed(taskIdx) {
+	// on_task_changed is called from js/task_chooser.js
 	init_pane(START_PANE);
 }
 
 function updateTaskDescription(taskIdx) {
-	var html = g_activities[0].tasks[taskIdx][1];
+	var html = g_activity.tasks[taskIdx][1];
 	if (html == '') html = '(none)';
 	$('#task_description').html(html);
 }
@@ -343,12 +345,23 @@ function load_student_pane() {
 }
 
 function update_student_pane(action) {
-	var is_student_action = action.action_type == "log_in" || action.action_type == "log_out";
-	if (g_accordion && is_student_action) {
-		var student_nickname = action.student_nickname
-		var is_logged_in = g_students[student_nickname].is_logged_in;
-		var item = new StudentDataItem(student_nickname, { "nickname":student_nickname, "is_logged_in":is_logged_in });
-        g_accordion.accumulator.add(item);
+	if (g_accordion) {
+        var is_action_defined = typeof(action) != "undefined";
+        var is_student_action = is_action_defined && (action.action_type == "log_in" || action.action_type == "log_out");		
+        if (is_student_action) {
+			var student_nickname = action.student_nickname
+			var is_logged_in = g_students[student_nickname].is_logged_in;
+			var item = new StudentDataItem(student_nickname, { "nickname":student_nickname, "is_logged_in":is_logged_in });
+			
+			// if new student logging in, add to accumulator
+			if (action.action_type == "log_in" && !g_accordion.accumulator.keyExists(item)) {
+				g_accordion.accumulator.add(item);
+			}
+			// otherwise, update existing item in accumulator
+			else {
+				g_accordion.accumulator.update(item);
+			}
+		}
         g_accordion.show();
     }
 }
@@ -364,8 +377,8 @@ StudentAccordion.prototype.expandedItem = function(key, i) {
 	return html;
 }
 
-StudentAccordion.prototype.show = function(update) {
-	AccordionList.prototype.show.call(this, update);
+StudentAccordion.prototype.show = function() {
+	AccordionList.prototype.show.call(this);
 	$(".logout_btn").click(function(event) {
 		event.stopPropagation();
 		var activity = g_activities[0];
@@ -395,9 +408,8 @@ function StudentAccumulator() {
 	this.sortOptions = ["ABC", "Login Status"]; 
 }
 
-StudentAccumulator.prototype.getKeys = function(update) {
-	update = (typeof(update) == "undefined") ? true : update;
-	if (update) {		
+StudentAccumulator.prototype.getKeys = function() {
+	if (this.needToUpdateKeys) {		
 		// sort names alphabetically w/logged in users on top
 		if (this.sortBy == "Login Status") {
 			this.keys = [];
@@ -421,7 +433,7 @@ StudentAccumulator.prototype.getKeys = function(update) {
 		}
 		// sort alphabetically
 		else {
-			this.keys = DataAccumulator.prototype.getKeys.call(this, update);
+			this.keys = DataAccumulator.prototype.getKeys.call(this);
 		}
 	}
 	return this.keys;
@@ -445,12 +457,16 @@ function load_history_pane() {
 }
 
 function update_history_pane(action) {
-	var is_student_action = action.action_type == "log_in" || action.action_type == "log_out";
-	if (!is_student_action) {
-		var html = getTaskRow(action);
-		var existingHtml = $("#task_actions").html();
-		html += existingHtml.replace("<tbody>", "").replace("</tbody>", "");
-		$("#task_actions").html(html);
+	// currently actions are sorted by time, with most recent actions on top so
+	// any new actions are added to top; if sort changes need to update implementation
+	if (typeof(action) != "undefined") {
+		var is_student_action = action.action_type == "log_in" || action.action_type == "log_out";
+		if (!is_student_action) {
+			var html = getTaskRow(action);
+			var existingHtml = $("#task_actions").html();
+			html += existingHtml.replace("<tbody>", "").replace("</tbody>", "");
+			$("#task_actions").html(html);
+		}
 	}
 }
 

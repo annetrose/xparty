@@ -37,8 +37,9 @@ DataItem.prototype.getData = function() {
 function DataAccumulator() {
 	this.dict = {};
 	this.keys = [];
-	this.sortBy = "ABC";
-	this.sortOptions = ["ABC", "Frequency"]; 
+	this.sortOptions = ["ABC", "Frequency"];
+	this.setSort("ABC");
+	this.needToUpdateKeys = true;
 }
 
 DataAccumulator.prototype.add = function(item) {	
@@ -47,11 +48,21 @@ DataAccumulator.prototype.add = function(item) {
 		this.dict[key] = [];
 	}
 	this.dict[key].push(item);
+	this.needToUpdateKeys = true;
 }
 
-DataAccumulator.prototype.getKeys = function(update) {
-	update = (typeof(update) == "undefined") ? true : update;
-	if (update) {
+DataAccumulator.prototype.update = function(item) {	
+	var key = item.getKey();
+	this.dict[key][0] = item;
+}
+
+DataAccumulator.prototype.updateAtIndex = function(item, index) {	
+	var key = item.getKey();
+	this.dict[key][i] = item;
+}
+
+DataAccumulator.prototype.getKeys = function() {
+	if (this.needToUpdateKeys) {
 		if (this.sortBy == "Frequency") {
 			this.keys = sortKeysByFrequency(this.dict);
 		}
@@ -59,11 +70,21 @@ DataAccumulator.prototype.getKeys = function(update) {
 			this.keys = sortKeysAlphabetically(this.dict);
 		}
 	}
+	this.needToUpdateKeys = false;
 	return this.keys;
+}
+
+DataAccumulator.prototype.keyExists = function(item) {
+	var key = item.getKey();
+	return typeof(this.dict[key]) != "undefined";
 }
 
 DataAccumulator.prototype.getValue = function(key, property) {
 	return this.dict[key][0].data[property];
+}
+
+DataAccumulator.prototype.getValueAtIndex = function(key, property, index) {
+	return this.dict[key][index].data[property];
 }
 
 DataAccumulator.prototype.getCountForKey = function(key) {
@@ -71,9 +92,10 @@ DataAccumulator.prototype.getCountForKey = function(key) {
 }
 
 DataAccumulator.prototype.setSort = function(sort) {
+	this.needToUpdateKeys = (typeof(this.sortBy) == "undefined") || this.sortBy != sort;
 	this.sortBy = sort;
 }
-	
+
 //=================================================================================
 // AccordionList
 //=================================================================================
@@ -88,9 +110,9 @@ function AccordionList(div, accumulator) {
 	g_accordion = this;
 }
 
-AccordionList.prototype.show = function(update) {
+AccordionList.prototype.show = function() {
 	var html = '';
-	var keys = this.accumulator.getKeys(update);	
+	var keys = this.accumulator.getKeys();
 	if (keys.length==0) {
 		html = '<div style="margin-bottom:15px;">(none)</div>';
 		this.div.html(html);
@@ -146,7 +168,8 @@ AccordionList.prototype.show = function(update) {
 			else {
 				list.show();
 			}
-		});
+			return false;
+		});		
 	}
 }
 
@@ -206,10 +229,10 @@ function TagCloud(div, accumulator, options) {
 	g_tagcloud = this;
 }
 
-TagCloud.prototype.show = function(update) {
+TagCloud.prototype.show = function() {
 	var html = '';
 	var max_weight = 1;
-	var keys = this.accumulator.getKeys(update);
+	var keys = this.accumulator.getKeys();
 	var accumulator = this.accumulator;
 	$.each(keys, function(i, key) {
 		var url = "javascript:open_accordion_index("+i+");";
