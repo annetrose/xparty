@@ -1,0 +1,57 @@
+/*
+# XParty - A Framework for Building Tools to Support Social Learning in Synchronous Environments
+# Authors: Ben Bederson - www.cs.umd.edu/~bederson
+#          Alex Quinn -- www.alexquinn.org
+#          Anne Rose -- www.cs.umd.edu/hcil/members/arose
+#          University of Maryland, Human-Computer Interaction Lab - www.cs.umd.edu/hcil
+# Date: Originally created Nov 2012
+# License: Apache License 2.0 - http://www.apache.org/licenses/LICENSE-2.0
+*/
+
+#custom_search_control { width: 100%; }
+.gsc-control-cse { border-color: #efede6; background-color: #efede6; }
+.cse input.gsc-search-button, input.gsc-search-button { height: auto;}
+input.gsc-input { border-color: #BCCDF0; font-family:"Lucida Grande", Tahoma, Arial, sans-serif; font-size:120%; color:#333; margin:0; padding:5px !important; border-top:1px solid #7c7c7c; border-left:1px solid #c3c3c3; border-right:1px solid #c3c3c3; border-bottom:1px solid #ddd; background:#fff; margin-right:20px; }
+input.gsc-search-button { border-color: #666666; background-color: #CECECE; background: #1b252e url(../imgs/alert-overlay.png) repeat-x; display: inline-block; padding: 7px 11px; color: #fff; text-decoration: none; line-height: 1; -moz-border-radius:5px; -webkit-border-radius: 5px; -moz-box-shadow: 0 1px 3px #999; -webkit-box-shadow: 0 1px 3px #999; text-shadow: 0 -1px 1px #171717; position: relative; cursor:pointer; text-transform:uppercase; font-weight:bold; font-family:Arial,Helvetica, sans-serif; margin-left: 12px !important; }
+.gsc-tabHeader.gsc-tabhInactive { border-color: #E9E9E9; background-color: #E9E9E9;}
+.gsc-tabHeader.gsc-tabhActive { border-top-color: #FF9900; border-left-color: #E9E9E9; border-right-color: #E9E9E9; background-color: #FFFFFF; }
+.gsc-webResult.gsc-result:hover { background-color: #f5f4ee; }
+.gs-webResult.gs-result a.gs-title:link, .gs-webResult.gs-result a.gs-title:link b { color: #0000CC; }
+.gs-webResult.gs-result a.gs-title:visited, .gs-webResult.gs-result a.gs-title:visited b { color: #0000CC; }
+.gs-webResult.gs-result a.gs-title:hover, .gs-webResult.gs-result a.gs-title:hover b { color: #0000CC; }
+.gs-webResult.gs-result a.gs-title:active, .gs-webResult.gs-result a.gs-title:active b { color: #0000CC; }
+.gsc-cursor-page { color: #0000CC; }
+a.gsc-trailing-more-results:link { color: #0000CC; }
+.gs-webResult .gs-snippet { color: #000000; }
+.gs-webResult div.gs-visibleUrl { color: #008000; }
+.gs-webResult div.gs-visibleUrl-short { color: #008000; }
+.gs-webResult div.gs-visibleUrl-short { display: none; }
+.gs-webResult div.gs-visibleUrl-long { display: block; }
+.gsc-cursor-box { border-color:#EDEDA9; }
+.gsc-results .gsc-cursor-page.gsc-cursor-current-page { border-color: #FF9900; background-color: #FFFFFF;}
+.gs-promotion { border-color: #336699; background-color: #FFFFFF; }
+.gs-promotion a.gs-title:link, .gs-promotion a.gs-title:link *, .gs-promotion .gs-snippet a:link { color: #0000CC; }
+.gs-promotion a.gs-title:visited, .gs-promotion a.gs-title:visited *, .gs-promotion .gs-snippet a:visited { color: #0000CC; }
+.gs-promotion a.gs-title:hover, .gs-promotion a.gs-title:hover *, .gs-promotion .gs-snippet a:hover { color: #0000CC; }
+.gs-promotion a.gs-title:active, .gs-promotion a.gs-title:active *, .gs-promotion .gs-snippet a:active { color: #0000CC; }
+.gs-promotion .gs-snippet, .gs-promotion .gs-title .gs-promotion-title-right, .gs-promotion .gs-title .gs-promotion-title-right * { color: #000000; }
+.gs-promotion .gs-visibleUrl, .gs-promotion .gs-visibleUrl-short { color: #008000; }
+.gsc-result .gs-title {height: auto !important;}
+
+#results_container { border:0px; }
+#results { border: 2px solid #ccc; }
+#results p { margin: 0px; padding: 8px; }
+#results_title { background-color: #f5f4ee; padding: 8px; } 
+#results_frame { width: 100%; height: 2000px; } 
+#rate_to_continue { margin: 0px; margin-bottom: 12px; }
+#response_msg { font-size: 12px; font-size: 1.2rem; font-style: italic; }
+
+#search_history li { padding-left: 0px; margin-left: 0px; margin-bottom: 12px; }
+.search_history_links { margin-left: 10px; padding-left: 0px; list-style-type: none; }
+.search_history_links a { text-decoration: none; font-size: 12px; font-size: 1.2rem; }
+.search_history_links li { line-height: 1.5rem;}
+.search_history_links li.helpful { margin-left: 5px; color: #739c95; }
+.search_history_links li.helpful a { border-bottom: 1px solid #739c95;  }
+.search_history_links li.not_helpful { margin-left: 5px; color: #5C091F; }
+.search_history_links li.not_helpful a { border-bottom: 1px solid #5C091F; }
+.search_history_links li.unrated { margin-left: 5px; }

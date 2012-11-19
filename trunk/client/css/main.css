@@ -1,6 +1,12 @@
-/* # XParty - A Framework for Building Tools to Support Social Learning in Synchronous Environments # Author: Ben Bederson - www.cs.umd.edu/~bederson # University
-of Maryland, Human-Computer Interaction Lab - www.cs.umd.edu/hcil # Date: Originally created July 2011 # License: Apache
-License 2.0 - http://www.apache.org/licenses/LICENSE-2.0 */
+/*
+# XParty - A Framework for Building Tools to Support Social Learning in Synchronous Environments
+# Authors: Ben Bederson - www.cs.umd.edu/~bederson
+#          Alex Quinn -- www.alexquinn.org
+#          Anne Rose -- www.cs.umd.edu/hcil/members/arose
+#          University of Maryland, Human-Computer Interaction Lab - www.cs.umd.edu/hcil
+# Date: Originally created July 2011
+# License: Apache License 2.0 - http://www.apache.org/licenses/LICENSE-2.0
+*/
 
 /* bgnd: #EDEDA9 color1: BD6E46 color2: 453B2C hilite1: 294A49 hilite2: 82BF93 */
 
@@ -12,8 +18,6 @@ highlight, light purple * C4B0CF small highlight, light purple */
 Author:Holly Halvorson | www.hhgraphics.net
 */
 
-/* page styles
------------------------------------------------ */
 body { background-color: #dfddd5; border-top: 5px solid #141e26; font-family: Helvetica, Arial, 'Liberation Sans', FreeSans, SunSans-Regular, Sans-Serif;}
 td { vertical-align: top; }
 a { color: #5c091f; }
@@ -113,15 +117,17 @@ h6,.h6 { font-size:16px; font-size: 1.6rem; margin:0 0 .4rem 0; }
 .ui-accordion .ui-accordion-content-active { display: block; }
 
 /* ------ buttons ----------*/
-.cssbtn, .cssbtn:visited { background: #1b252e url(../imgs/alert_overlay.png) repeat-x;display: inline-block;padding: 7px 11px;color: #fff;text-decoration: none;line-height: 1;-moz-border-radius: 5px;-webkit-border-radius: 5px;-moz-box-shadow: 0 1px 3px #999;-webkit-box-shadow: 0 1px 3px #999;text-shadow: 0 -1px 1px #171717;position: relative;cursor: pointer;text-transform:uppercase;font-weight:bold;font-family:Arial,Helvetica, sans-serif;}
+button.load_btn {} 
+button.load_btn.selected { background: -webkit-gradient(linear, left top, left bottom, from(#1B252E), to(#111417)); background: -moz-linear-gradient(top, #1B252E, #111417); filter: progid:DXImageTransform.Microsoft.gradient(startColorstr = '#1B252E', endColorstr='#111417'); /*ie7 */ -ms-filter: progid:DXImageTransform.Microsoft.gradient(startColorstr = '#1B252E', endColorstr='#111417');} 
+button[disabled = 'disabled'], button[disabled = 'disabled']:hover { color:ButtonShadow; background: #1b252e url(../imgs/alert_overlay.png) repeat-x; cursor: text; }
+
+.cssbtn, .cssbtn:visited { background: #1b252e url(../imgs/alert_overlay.png) repeat-x; display: inline-block; padding: 7px 11px; color: #fff; text-decoration: none; line-height: 1;-moz-border-radius: 5px;-webkit-border-radius: 5px;-moz-box-shadow: 0 1px 3px #999;-webkit-box-shadow: 0 1px 3px #999;text-shadow: 0 -1px 1px #171717;position: relative;cursor: pointer;text-transform:uppercase;font-weight:bold;font-family:Arial,Helvetica, sans-serif;}
 .cssbtn:hover { background: -webkit-gradient(linear, left top, left bottom, from(#2e3d4a), to(#1b252e)); background: -moz-linear-gradient(top, #2e3d4a, #1b252e); filter: progid:DXImageTransform.Microsoft.gradient(startColorstr    = '#2e3d4a', endColorstr='#1b252e'); /*ie7 */ -ms-filter: progid:DXImageTransform.Microsoft.gradient(startColorstr = '#2e3d4a', endColorstr='#1b252e');  /* ie8 */ color: #fff; }
 .cssbtn:active { top: 1px; }
 .small.cssbtn, .small.cssbtn:visited { font-size: 11px; padding:1px; }
 .cssbtn, .cssbtn:visited, .medium.cssbtn, .medium.cssbtn:visited { font-size:1.2rem; line-height: 1.2em; text-shadow: 0 -1px 1px rgba(0,0,0,0.25); padding:10px !important; }
 .large.cssbtn, .large.cssbtn:visited { font-size: 16px; padding: 8px 14px 9px; }
 .smallest.cssbtn, .smallest.cssbtn:visited { font-size: 10px; padding:6px 6px 6px 11px !important; }
-.hlight { background: #5d665e; }
-.hlight:hover { background: -webkit-gradient(linear, left top, left bottom, from(#6a776c), to(#5d665e)); background: -moz-linear-gradient(top, #6a776c, #5d665e); filter: progid:DXImageTransform.Microsoft.gradient(startColorstr = '#6a776c', endColorstr='#5d665e'); /*ie7 */ -ms-filter: progid:DXImageTransform.Microsoft.gradient(startColorstr = '#6a776c', endColorstr='#5d665e');  /* ie8 */ }
 
 button::-moz-focus-inner { border:0; padding:0; } /* remove button padding in FF */
 .logout_btn { display: inline-block; line-height: 1; cursor: pointer; color: grey !important; font-size: 8px !important; border: 1px solid grey; background: none; padding: 2px !important; vertical-align:middle !important; }
@@ -135,11 +141,8 @@ button::-moz-focus-inner { border:0; padding:0; } /* remove button padding in FF
 #activities_list_active a, #activities_list_inactive a { font-size:18px; font-size:1.8rem; line-height: 1.3em; font-weight: bold;margin:0 0 2% 0; }
 #activities_list_active, #activities_list_inactive { margin:2% 0; }
 #activities_list_active .ui-accordion-content ol, #activities_list_inactive .ui-accordion-content ol { margin-bottom:25px !important; }
-#task_description { line-height:1.5em; }
 .sbOptions { width: 100%; }
 .ui-accordion-content ul li.left { margin:5px !important; }
-
-/*---------- Most of what is below is the original CSS. Holly --------------------------------*/
 
 .header { font-weight: bold; width: 100%; }
 .title { cursor: pointer; }
@@ -167,17 +170,12 @@ span.view_icon_only { padding: 8px 0px 0px 14px; line-height:1em; background: ur
 
 /**************************************** * TEACHER / TEACHER_LESSON */
 
-td { vertical-align: top; } 
-button.load_btn {} 
-button.load_btn.selected { background: -webkit-gradient(linear, left top, left bottom, from(#1B252E), to(#111417)); background: -moz-linear-gradient(top, #1B252E, #111417); filter: progid:DXImageTransform.Microsoft.gradient(startColorstr = '#1B252E', endColorstr='#111417'); /*ie7 */ -ms-filter: progid:DXImageTransform.Microsoft.gradient(startColorstr = '#1B252E', endColorstr='#111417');} 
-button.load_btn[disabled = true] { color:ButtonShadow; cursor: text; } 
+td { vertical-align: top; }
 
 h3 { }
 #activity_code { font-weight: bold; } 
 #logo_img {width: 100%; max-width: 168px;}
-.logged_out { color: #888888; } #rate_result_to_continue { margin: 0px; margin-bottom: 12px; } 
-
-/******** SCHEME5 ********/
+.logged_out { color: #888888; }
 
 #data_container { margin: 0px; padding: 0px; }
 #data_container h4 { margin-bottom: 20px; }

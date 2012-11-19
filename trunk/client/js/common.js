@@ -54,6 +54,36 @@ function getNumericTimestamp(ts) {
 // URL / HTML
 //=================================================================================
 
+function parseUrl(url) {
+	var urlRegExp = new RegExp("^([a-z]{3,5})"    // type
+			                 + "://"              // ://
+							 + "([^?/#:]+)"       // domain
+							 + "(:([0-9]{1,5}))?" // port
+							 + "(/[^?#:]*)?"      // path
+							 + "(\\?([^?/#:]+))?" // query string
+							 + "(#[^?/#:]*)?");   // hash locator
+	var parts = urlRegExp.exec(url);
+	return {
+		type: parts[1],
+		domain: parts[2],
+		port: parts[4] || null,
+		path: parts[5] || null,
+		queryString: (parts[7] || null)
+	};
+}
+
+function getLinkHtml(url, title, maxLength, className, onclick) {
+	var displayTitle = (maxLength !== null && maxLength !== 0) ? clipText(title, maxLength) : title;
+	var moreAttrs = "";
+	if (className) {
+		moreAttrs += ' class="' + className + '"';
+	}
+	if (onclick) {
+		moreAttrs += ' onclick="' + onclick + '"';
+	}
+	return '<a href="' + url + '" title="' + title + '" target="_blank" ' + moreAttrs + '>' + htmlEscape(displayTitle) + '</a>';
+}
+
 function getSpecificURLParameter(url, theArgName) {
 	/* Thanks to  Eric Scheid ("ironclad") for this snippet, which was downloaded from ...
 	 * http://www.evolt.org/article/Javascript_to_Parse_URLs_in_the_Browser/17/14435/?format=print
@@ -120,4 +150,17 @@ function showMessageDialog(msg, url) {
             }
         }
     });
+}
+
+//=================================================================================
+// Strings
+//=================================================================================
+
+function clipText(s, maxLength) {
+	var dots = "...";
+	var sLength = s.length;
+	if(sLength > maxLength) {
+		s = s.substr(0, maxLength - dots.length) + dots;
+	}
+	return s;
 }

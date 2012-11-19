@@ -4,24 +4,32 @@
 {% block custom_head %}
 <script type="text/javascript">
     
+    var QUERY_PANE = "query";
+    var WORD_PANE = "word";
+    var LINK_PANE = "link";
     var ANSWER_PANE = "answer";
-    g_customDataPanes[ANSWER_PANE] = { title: 'Answers' };
+    
+    g_customDataPanes[QUERY_PANE] = { title: 'Queries' };
+    g_customDataPanes[WORD_PANE] = { title: 'Words' };
+    g_customDataPanes[LINK_PANE] = { title: 'Links' };
+    g_customDataPanes[ANSWER_PANE] = { title: 'Responses' };
+    
     
     function load_custom_pane(paneKey, div) {
         switch(paneKey) {
-            case ANSWER_PANE:
-                load_answer_pane(div);
+            case QUERY_PANE:
+                load_query_pane(div);
                 break;
             default:
-                div.html("");
+                div.html("Not implemented yet");
                 break;
         }
     }
     
     function update_custom_pane(paneKey, action) {
         switch(paneKey) {
-            case ANSWER_PANE:
-                update_answer_pane(action);
+            case QUERY_PANE:
+                update_query_pane(action);
                 break;
             default:
                 break;
@@ -29,22 +37,23 @@
     }
     
     //=================================================================================
-    // Answer Pane
+    // Query Pane
     //=================================================================================
 
-    function load_answer_pane(div) {
+    function load_query_pane(div) {
         var accumulator = new DataAccumulator();
         var taskIdx = selectedTaskIdx();
         var taskHistory = g_task_histories[taskIdx];
+        var answers = [];
         for (var i=0; i<taskHistory.length; i++) {
             var action = taskHistory[i];
-            if (action.action_type == "answer") {
-                item = new DataItem(action.action_data.answer, action);
+            if (action.action_type == "query") {
+                item = new DataItem(action.action_data.query, action);
                 accumulator.add(item);
             }
         }
            
-        var html = '<h3 id="pane_title" style="margin-bottom:10px">'+g_customDataPanes[ANSWER_PANE].title+'</h3>';
+        var html = '<h3 id="pane_title" style="margin-bottom:10px">'+g_customDataPanes[QUERY_PANE].title+'</h3>';
         html += '<div id="tag_cloud" class="tag_cloud"></div>';
         html += '<div id="data_list"></div>';
         div.html(html);
@@ -52,36 +61,36 @@
         var tagcloud = new TagCloud($("#tag_cloud"), accumulator);
         tagcloud.show();
         
-        var accordion = new AnswerAccordion($("#data_list"), accumulator);
+        var accordion = new QueryAccordion($("#data_list"), accumulator);
         accordion.show();
     }
     
-    function update_answer_pane(action) {
+    function update_query_pane(action) {
         if (g_accordion) {
             var is_action_defined = typeof(action) != "undefined";
-            var is_answer_action = is_action_defined && action.action_type == "answer"; 
+            var is_query_action = is_action_defined && action.action_type == "query"; 
         
             // if new answer, add to accumulator
-            if (is_answer_action) {
-                var item = new DataItem(action.action_data.answer, action);
+            if (is_query_action) {
+                var item = new DataItem(action.action_data.query, action);
                 g_accordion.accumulator.add(item);
             }
             
-            // if new answer, redraw pane
+            // if new query, redraw pane
             // if no action, redraw pane (e.g., sort or filter)
-            if (!is_action_defined || is_answer_action) {
+            if (!is_action_defined || is_query_action) {
                 g_accordion.show();
                 g_tagcloud.show();
             }          
         }
     }
     
-    function AnswerAccordion(div, accumulator) {
+    function QueryAccordion(div, accumulator) {
         AccordionList.call(this, div, accumulator);
     }
-    AnswerAccordion.prototype = Object.create(AccordionList.prototype);
+    QueryAccordion.prototype = Object.create(AccordionList.prototype);
     
-    AnswerAccordion.prototype.expandedItem = function(key, i) {
+    QueryAccordion.prototype.expandedItem = function(key, i) {
         var student_dict = {};
         var items = this.accumulator.dict[key];
         for (var j=0; j<items.length; j++) {
@@ -94,6 +103,7 @@
         }
         
         var html = get_student_list_html(student_dict);
+        html += "<h2>NEED TO ADD OTHER STUFF</h2>";
         return html;
     }
        

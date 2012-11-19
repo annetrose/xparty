@@ -26,6 +26,9 @@ handlers:
 
 - url: /js
   static_dir: client/js
+  
+- url: /custom
+  static_dir: client/custom
  
 - url: /cron/students_timeout
   script: server/cron/StudentsTimeoutHandler.py

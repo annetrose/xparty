@@ -9,9 +9,9 @@
 */
 
 function _task_changed(eventObject) {
-	var task_idx = selected_task_idx();
-	if (typeof on_task_changed != "undefined") {
-		on_task_changed(task_idx);
+	var task_idx = selectedTaskIdx();
+	if (typeof onTaskChanged != "undefined") {
+		onTaskChanged(task_idx);
 	}
 }
 
@@ -19,7 +19,7 @@ $(function() {
 	$("#task_chooser").change(_task_changed);
 });
 
-function selected_task_idx() {
+function selectedTaskIdx() {
 	return $("#task_chooser").get(0).selectedIndex;
 }
 
@@ -27,7 +27,7 @@ function number_of_tasks() {
 	return $("#task_chooser").get(0).childNodes.length;
 }
 
-function change_selected_task(value) {
+function changeSelectedTask(value) {
 	var option = $("#task_chooser").find("option[value="+value+"]");
 	$("#task_chooser").selectbox("change", option.attr('value'), option.text());
 }
