@@ -57,7 +57,7 @@ form li div label .currently { display:none; }
 
 /* ----- FIELDS ----- */
 input.text, input.search, input.file, textarea.textarea, select.select { font-family:"Lucida Grande", Tahoma, Arial, sans-serif; font-size:100%; color:#333; margin:0; padding:5px; }
-input.text, input.search, textarea.textarea { border-top:1px solid #7c7c7c; border-left:1px solid #c3c3c3; border-right:1px solid #c3c3c3; border-bottom:1px solid #ddd; background:#fff url(../images/fieldbg.gif) repeat-x top; }
+input.text, input.search, textarea.textarea { border-top:1px solid #7c7c7c; border-left:1px solid #c3c3c3; border-right:1px solid #c3c3c3; border-bottom:1px solid #ddd; background:#fff; }
 select.select { padding:1px 0 0 0; }
 input.search { -webkit-border-radius:10px; -moz-border-radius:10px; border-radius:10px; padding-left:6px; }
 input.checkbox, input.radio { display:block; margin:4px 0 0 0; padding:0; width:13px; height:13px; }

@@ -3,7 +3,7 @@
 
 {% block custom_head %}
 <script type="text/javascript">
-    function init_custom_ui() { 
+    function initCustomUI() { 
         $("#answer").keyup(function(event) {
             if (event.which == 13) {  // Enter key
                 send_answer();
@@ -16,8 +16,8 @@
         });
     }
     
-    function init_custom_task_ui() {
-        var task_idx = selected_task_idx();
+    function initCustomTaskUI() {
+        var task_idx = selectedTaskIdx();
         var task = g_activity.tasks[task_idx];
         var question = task[0];
         var answer = get_answer();
@@ -29,8 +29,8 @@
     }
     
     function get_answer() {
-        // all recorded actions are answers
-        var task_idx = selected_task_idx();
+        // current implementation assumes all recorded actions are answers
+        var task_idx = selectedTaskIdx();
         var task_history = g_task_histories[task_idx];
         var answer = task_history.length > 0 ? task_history[task_history.length-1].action_data.answer : "";
         var status = task_history.length > 0 ? "Submitted " + getFormattedTimestamp(getLocalTime(new Date(task_history[task_history.length-1].timestamp))) : "";
@@ -46,11 +46,11 @@
         }
         else {
             if (answer != prev_answer) {
-                on_student_action("answer", answer, { "answer":answer });
+                onStudentAction("answer", answer, { "answer":answer });
             }
-            task_num = selected_task_idx() + 1;
+            task_num = selectedTaskIdx() + 1;
             if (task_num < g_activity.tasks.length) {
-                change_selected_task(task_num+1);  
+                changeSelectedTask(task_num+1);  
             }
             else {
                 $('#msg').html("Congratulations! You have finished this activity.");

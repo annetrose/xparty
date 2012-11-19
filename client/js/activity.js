@@ -104,7 +104,7 @@ function getActivityHtml(activity) {
     html += '<button id="download_activity_btn_'+activityCode+'" onclick="downloadActivity(\'' + activityCode + '\')" class="cssbtn smallest">Download Data<span class="dl"></span></button>';
     html += '</li>';
     html += '<li class="left">';
-    html += '<button id="clear_activity_btn_'+activityCode+'" onclick="clearActivity(\'' + activityCode + '\', true);" class="cssbtn smallest">Clear Data<span class="clr"></span></button>';
+    html += '<button id="clear_activity_btn_'+activityCode+'" onclick="clearActivity(\'' + activityCode + '\');" class="cssbtn smallest">Clear Data<span class="clr"></span></button>';
     html += '</li>';
     html += '</ul>';
     html += '<div style="clear: both"></div>';
@@ -501,7 +501,7 @@ function downloadAllActivities() {
 	alert('Not implemented yet');
 }
 
-function clearActivity(activityCode, showDialog) {
+function clearActivity(activityCode) {
 	$.ajax("/teacher_activity", {
 			type: 'POST',
 			async: false,
@@ -512,9 +512,10 @@ function clearActivity(activityCode, showDialog) {
 			dataType: 'json',
 			success: function(data) {
 				if (data.status==1) {
+					var activity = getActivity(activityCode);
 					g_students = {};
 					g_task_histories = [];
-					for (var task_idx=0; task_idx<g_activity.tasks.length; task_idx++) {
+					for (var task_idx=0; task_idx<activity.tasks.length; task_idx++) {
 						g_task_histories.push([]);
 					}
 					if (typeof updateData == 'function') {
@@ -523,9 +524,7 @@ function clearActivity(activityCode, showDialog) {
 					if (typeof initUI == 'function') {
 					    initUI();
 					}
-					if (showDialog) {
-					    showMessageDialog('All student data has been cleared from activity '+ activityCode);
-					}
+					showMessageDialog('All student data has been cleared from activity '+ activityCode);
 				}
 				else {
 					alert(data);

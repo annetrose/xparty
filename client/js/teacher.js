@@ -8,8 +8,6 @@
 # License: Apache License 2.0 - http://www.apache.org/licenses/LICENSE-2.0
 */
 
-// TODO: Update data panes w/ incoming student action
-
 // data panes
 var STUDENT_PANE = "students";
 var HISTORY_PANE = "history";
@@ -62,7 +60,7 @@ function initUI() {
 	html += '<button class="cssbtn" id="start_activity_btn_'+g_activity.activity_code+'" style="display:none" onclick="startActivity(\''+g_activity.activity_code+'\')">Start activity<span class="start"></span></button><br/>';
 	html += '<button class="cssbtn" id="clone_activity_btn_'+g_activity.activity_code+'" onclick="cloneActivity(\''+g_activity.activity_code+'\', false)">Clone activity</button><br/>';
     html += '<button class="cssbtn" id="download_activity_btn_'+g_activity.activity_code+'" onclick="downloadActivity(\''+g_activity.activity_code+'\')">Download data<span class="dl"></span></button><br/>' 
-    html += '<button class="cssbtn" id="clear_activity_btn_'+g_activity.activity_code+'" onclick="clearActivity(\''+g_activity.activity_code+'\', false)">Clear data<span class="clr"></span></button><br/>';
+    html += '<button class="cssbtn" id="clear_activity_btn_'+g_activity.activity_code+'" onclick="clearActivity(\''+g_activity.activity_code+'\')">Clear data<span class="clr"></span></button><br/>';
     html += '<button class="cssbtn" id="delete_activity_btn_'+g_activity.activity_code+'" onclick="deleteActivity(\''+g_activity.activity_code+'\')">Delete activity<span class="del"></span></button>';
     $('#side_button_bar2').html(html);
 
@@ -81,7 +79,7 @@ function updateUI() {
 	// update sidebar and header info
     var activity = g_activities[0];
     var activity_code = activity.activity_code;
-    updateTaskDescription(selected_task_idx());
+    updateTaskDescription(selectedTaskIdx());
     setPaneButtonHtml(STUDENT_PANE, g_dataPanes[STUDENT_PANE]);
 	for (paneKey in g_customDataPanes) {
 		setPaneButtonHtml(paneKey, g_customDataPanes[paneKey]);
@@ -120,7 +118,7 @@ function getPaneItemCount(paneKey) {
 		case HISTORY_PANE:
 			break;
 		default:
-			var task_idx = selected_task_idx();
+			var task_idx = selectedTaskIdx();
 			if (typeof(g_action_counts[task_idx][paneKey]) != "undefined") {
 				itemCount = g_action_counts[task_idx][paneKey];
 			}
@@ -165,7 +163,7 @@ function update_pane(action) {
 		default:
 			if (typeof(update_custom_pane) == "function") {	
 				var task_idx = typeof(action) != "undefined" ? action.action_data.task_idx : -1;
-				if (typeof(action) == "undefined" || task_idx == selected_task_idx()) {
+				if (typeof(action) == "undefined" || task_idx == selectedTaskIdx()) {
 					update_custom_pane(g_currentPane, action);
 				}
 			}
@@ -313,8 +311,8 @@ function handle_action(action) {
 // UI Tasks
 //=================================================================================
 
-function on_task_changed(taskIdx) {
-	// on_task_changed is called from js/task_chooser.js
+function onTaskChanged(taskIdx) {
+	// onTaskChanged is called from js/task_chooser.js
 	init_pane(START_PANE);
 }
 
@@ -472,7 +470,7 @@ function update_history_pane(action) {
 
 function getTaskHistoryAsHTML() { 
 	var html = '';
-	var task = selected_task_idx()+1;
+	var task = selectedTaskIdx()+1;
 	var taskHistory = g_task_histories[task-1];
 	// old on top
  	//for (var i=0; i<taskHistory.length; i++) {
@@ -515,7 +513,7 @@ function getTaskRows(html) {
 }
 
 function getStudentHistoryAsHTML(studentNickname) { 
-    var task = selected_task_idx()+1;
+    var task = selectedTaskIdx()+1;
     var student = g_students[studentNickname];
 	var taskHistory = student.task_history[task-1];
 	
@@ -566,7 +564,7 @@ function drawStudentHistory(div, studentNickname) {
 
     $('.student_history').width(historyWidth);
     
-    var task = selected_task_idx()+1;
+    var task = selectedTaskIdx()+1;
  	var searchHistoryHtml = [];
     var student = g_students[studentNickname];
 	var taskHistory = student.task_history[task-1];

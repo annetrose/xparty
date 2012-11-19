@@ -10,6 +10,7 @@
 
 function initStudent() {
 	openChannel();
+	updateData();
 	initUI();
 };
 
@@ -33,11 +34,18 @@ function initUI() {
     	taskIdx--;
     }
     
-    if (typeof init_custom_ui == "function") {
-    	init_custom_ui();
+    if (typeof initCustomUI == "function") {
+    	initCustomUI();
     }
     
-    on_task_changed(taskIdx);
+    onTaskChanged(taskIdx);
+}
+
+// initialize any data structures
+function updateData() {	
+	if (typeof(updateCustomData) != "undefined") {
+		updateCustomData();
+	}
 }
 
 //=================================================================================
@@ -92,24 +100,24 @@ function updateChannelToken(data) {
 // UI Event Handlers
 //=================================================================================
 
-function on_task_changed(taskIdx) {
-	// on_task_changed is called from js/task_chooser.js
+function onTaskChanged(taskIdx) {
+	// onTaskChanged is called from js/task_chooser.js
 	var task = g_activity.tasks[taskIdx];
 	var description = (task[1] == '') ? '(none)' : task[1];
 	$('#task_description').html(description);
 	
-    if (typeof init_custom_task_ui == "function") {
-    	init_custom_task_ui();
+    if (typeof initCustomTaskUI == "function") {
+    	initCustomTaskUI();
     }
 }
 
-function on_student_action(actionType, actionDescription, actionData) {
+function onStudentAction(actionType, actionDescription, actionData) {
 	$.ajax({
 		type: 'POST',
 		url: '/student_action', 
 		dataType: 'json',
 		data: {
-			task_idx : selected_task_idx(),
+			task_idx : selectedTaskIdx(),
 			action_type : actionType,
 			action_description : actionDescription,
 			action_data : $.toJSON(actionData)
@@ -118,6 +126,9 @@ function on_student_action(actionType, actionDescription, actionData) {
 		success: function(data) {
 			if (data.status == 1) {
 				g_task_histories[data.action.task_idx].push(data.action);
+				if (typeof(onStudentActionComplete) == "function") {
+					onStudentActionComplete(data);
+				}
 			}
 			else {
             	showMessageDialog(data.msg, "/student_login");
