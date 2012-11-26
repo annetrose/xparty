@@ -78,6 +78,8 @@
       var weighting = $(this).attr("rel") - lowest;
       if (opts.size) {
         $(this).css({"font-size": opts.size.start + (weighting * fontIncr) + opts.size.unit});
+        // added to avoid overlapping tags (atr)
+        $(this).css({"line-height": opts.size.start + (weighting * fontIncr) + opts.size.unit});
       }
       if (opts.color) {
         $(this).css({"color": tagColor(opts.color, colorIncr, weighting)});

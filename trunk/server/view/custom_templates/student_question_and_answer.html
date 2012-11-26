@@ -2,63 +2,7 @@
 {# vim: set sw=2 ts=2 expandtab: #}
 
 {% block custom_head %}
-<script type="text/javascript">
-    function initCustomUI() { 
-        $("#answer").keyup(function(event) {
-            if (event.which == 13) {  // Enter key
-                send_answer();
-            }
-            $('#status').html("");
-        });
-        
-        $('#submit_answer').click(function() {
-            send_answer();
-        });
-    }
-    
-    function initCustomTaskUI() {
-        var task_idx = selectedTaskIdx();
-        var task = g_activity.tasks[task_idx];
-        var question = task[0];
-        var answer = get_answer();
-        $('#question').html(question);
-        $('#answer').val(answer["answer"]);
-        $("#status").toggleClass("warning", false);
-        $('#status').html(answer["status"]);
-        $('#msg').html("");
-    }
-    
-    function get_answer() {
-        // current implementation assumes all recorded actions are answers
-        var task_idx = selectedTaskIdx();
-        var task_history = g_task_histories[task_idx];
-        var answer = task_history.length > 0 ? task_history[task_history.length-1].action_data.answer : "";
-        var status = task_history.length > 0 ? "Submitted " + getFormattedTimestamp(getLocalTime(new Date(task_history[task_history.length-1].timestamp))) : "";
-        return { "answer" : answer, "status" : status };
-    }
-    
-    function send_answer() {
-        var prev_answer = get_answer()["answer"];
-        var answer = $("#answer").val();
-        if (answer == "") {
-            $("#status").toggleClass("warning", true);
-            $("#status").html("Please enter an answer before submitting");
-        }
-        else {
-            if (answer != prev_answer) {
-                onStudentAction("answer", answer, { "answer":answer });
-            }
-            task_num = selectedTaskIdx() + 1;
-            if (task_num < g_activity.tasks.length) {
-                changeSelectedTask(task_num+1);  
-            }
-            else {
-                $('#msg').html("Congratulations! You have finished this activity.");
-            }
-        }
-    }
-    
-</script>
+<script type="text/javascript" src="/custom/js/student_question_and_answer.js"></script>
 {% endblock %}
 
 {% block task_gui %}    

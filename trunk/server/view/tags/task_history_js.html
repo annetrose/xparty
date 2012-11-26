@@ -1,8 +1,8 @@
 
 // Initialize task history
-var g_task_histories = [];
+var gTaskHistories = [];
 {% for task_history in task_histories %}
 var task_history = [];
 {% for action in task_history %}task_history.push({{action|safe}});
-{% endfor %}g_task_histories.push(task_history);
+{% endfor %}gTaskHistories.push(task_history);
 {% endfor %}

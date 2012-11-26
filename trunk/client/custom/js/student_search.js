@@ -65,6 +65,10 @@ function initCustomTaskUI() {
 	updateSearchHistory();
 }
 
+//=================================================================================
+// Search
+//=================================================================================
+
 function onSearch() {  
     // find result links and register click handler
     $("#custom_search_control").contents().find("a[class='gs-title']").click(function(event) {
@@ -96,6 +100,74 @@ function onSearch() {
     updateSearchHistory();
 }
 
+function followLink(url, title) {
+	$("#results_title").html("");
+	if (domainAllowsFraming(url)) {
+		// Open the link in the IFRAME.  If we used the a.target attribute
+		// Firefox insisted on opening it in a new tab/window.
+		$("#results_frame").get(0).src = "";
+		$("#results_frame").get(0).src = url;
+		$("#results_frame").show();
+		$("#no_frame_message").hide();
+	}
+	else {
+		$("#results_frame").hide()
+		$("#no_frame_message").show();
+		window.open(url);
+	}
+	$("#results_title").html(title);
+	switchToResults();
+}
+
+/*
+ * Disabling ads is explicitly ALLOWED because we are a university.
+ *
+ * From http://www.google.com/cse/manage/create:
+ *
+ * "... You must show ads alongside the search results, unless you are creating
+ * your search engine for a nonprofit organization, university, or government
+ * agency, in which case you can disable ads. ..."
+ *
+ * http://www.google.com/support/customsearch/bin/answer.py?hl=en&answer=70354
+ */
+
+function hideAds() {
+	$("#custom_search_control").contents().find(".gsc-adBlock").hide();
+	$("#custom_search_control").contents().find(".gsc-adBlockVertical").hide();
+	$("#custom_search_control").contents().find(".gsc-tabsArea").hide();		
+}
+
+function domainAllowsFraming(url) {
+	var domain = parseUrl(url).domain;
+	var urlParsed = parseUrl(url);
+	var domain = urlParsed.domain;
+	var result = true;
+	for (var i=0; i<NO_FRAME_DOMAINS.length; i++) {
+		var noFrameDomain = NO_FRAME_DOMAINS[i];
+		if (noFrameDomain===domain) {
+			result = false;
+			break;
+		}
+		else {
+			var pos = domain.lastIndexOf(noFrameDomain);
+			if ((pos + noFrameDomain.length == domain.length) && (pos==0 || domain.charAt(pos-1)=="." )) {
+				result = false;
+				break;
+			}
+		}
+	}
+	return result;
+}
+
+function switchToResults() {
+	$("#results_container").show();
+	$("#search_container").hide();
+}
+
+//=================================================================================
+// Link Followed
+//=================================================================================
+
 function onLinkFollowed(query, url, title) {	
     var taskIdx = selectedTaskIdx();
     addLinkFollowed(taskIdx, query, url, title, true);
@@ -103,13 +175,16 @@ function onLinkFollowed(query, url, title) {
 	updateSearchHistory();
 }
 
+//=================================================================================
+// Link Rated
+//=================================================================================
+
 function onLinkRated() {
 	var taskIdx = selectedTaskIdx();
-	var search = findSearchInHistory(taskIdx, gCurrentSearch.query);
+	var search = getSearch(taskIdx, gCurrentSearch.query);
 	if (search) {
-		var linkIndex = findLinkIndex(search, gCurrentSearch.url);
-		if (linkIndex != -1) {
-			var link = search["links"][linkIndex];
+		var link = getLink(search, gCurrentSearch.url);
+		if (link) {
 			var rating = this.id == "helpful_button" ? "helpful" : "not_helpful";
 			addLinkRated(taskIdx, search.query, link.url, link.title, rating, true);
 			updateSearchHistory();
@@ -117,7 +192,17 @@ function onLinkRated() {
 		}
 	}
 }
-    
+
+function switchToSearch() {
+	$("#results_frame").get(0).src = "about:blank";
+	$("#results_container").hide();
+	$("#search_container").show();
+}
+  
+//=================================================================================
+// Response Saved
+//=================================================================================
+
 function onResponseSaved() {
 	var taskIdx = selectedTaskIdx();
 	var response = $("#response").val();
@@ -127,13 +212,18 @@ function onResponseSaved() {
 	$("#response_save_button").attr("disabled", "disabled");
 	addResponse(taskIdx, response, responseNote, new Date(), true);
 	
-    if (taskIdx == g_activity.tasks.length-1) {
+    if (taskIdx == gActivity.tasks.length-1) {
         $('#msg').html("Congratulations! You have finished this activity.");
     }
 }
 
+//=================================================================================
+// Search History UI
+//=================================================================================
+
 function updateSearchHistory() {
-	// ordered alphabetically; getSearches returns searches in order of when they occurred
+	// displays searches alphabetically
+	// getSearches returns searches in order of when they occurred
 	
 	var taskIdx = selectedTaskIdx();
 	var searches = getSearches(taskIdx);
@@ -184,85 +274,15 @@ function onHistoryLinkClicked(event, query) {
 	return false;
 }
 
-function followLink(url, title) {
-	$("#results_title").html("");
-	if (domainAllowsFraming(url)) {
-		// Open the link in the IFRAME.  If we used the a.target attribute
-		// Firefox insisted on opening it in a new tab/window.
-		$("#results_frame").get(0).src = "";
-		$("#results_frame").get(0).src = url;
-		$("#results_frame").show();
-		$("#no_frame_message").hide();
-	}
-	else {
-		$("#results_frame").hide()
-		$("#no_frame_message").show();
-		window.open(url);
-	}
-	$("#results_title").html(title);
-	switchToResults();
-}
-
-function switchToSearch() {
-	$("#results_frame").get(0).src = "about:blank";
-	$("#results_container").hide();
-	$("#search_container").show();
-}
-
-function switchToResults() {
-	$("#results_container").show();
-	$("#search_container").hide();
-}
-
-/*
- * Disabling ads is explicitly ALLOWED because we are a university.
- *
- * From http://www.google.com/cse/manage/create:
- *
- * "... You must show ads alongside the search results, unless you are creating
- * your search engine for a nonprofit organization, university, or government
- * agency, in which case you can disable ads. ..."
- *
- * http://www.google.com/support/customsearch/bin/answer.py?hl=en&answer=70354
- */
-
-function hideAds() {
-	$("#custom_search_control").contents().find(".gsc-adBlock").hide();
-	$("#custom_search_control").contents().find(".gsc-adBlockVertical").hide();
-	$("#custom_search_control").contents().find(".gsc-tabsArea").hide();		
-}
-
-function domainAllowsFraming(url) {
-	var domain = parseUrl(url).domain;
-	var urlParsed = parseUrl(url);
-	var domain = urlParsed.domain;
-	var result = true;
-	for (var i=0; i<NO_FRAME_DOMAINS.length; i++) {
-		var noFrameDomain = NO_FRAME_DOMAINS[i];
-		if (noFrameDomain===domain) {
-			result = false;
-			break;
-		}
-		else {
-			var pos = domain.lastIndexOf(noFrameDomain);
-			if ((pos + noFrameDomain.length == domain.length) && (pos==0 || domain.charAt(pos-1)=="." )) {
-				result = false;
-				break;
-			}
-		}
-	}
-	return result;
-}
-
 //=================================================================================
-// Search History Data
+// Search Data
 //=================================================================================
 
 var gSearchHistory = [];
 
 function updateCustomData() {
-	for (var taskIdx=0; taskIdx<g_activity.tasks.length; taskIdx++) {
-		var taskHistory = g_task_histories[taskIdx];
+	for (var taskIdx=0; taskIdx<gActivity.tasks.length; taskIdx++) {
+		var taskHistory = gTaskHistories[taskIdx];
 		gSearchHistory.push({"response":"", "response_note":"", "response_timestamp":null, "searches":[]});
 		for (var i=0; i<taskHistory.length; i++) {
 			var type = taskHistory[i].action_type;
@@ -287,8 +307,42 @@ function updateCustomData() {
 	}
 }
 
+function getSearches(taskIdx) {
+	return gSearchHistory[taskIdx]["searches"];
+}
+
+function lastSearch(taskIdx) {
+	var searches = getSearches(taskIdx);
+	return searches[searches.length-1];
+}
+
+function getSearch(taskIdx, query) {
+	var match = null;
+	var searches = getSearches(taskIdx);
+	for (var i=0; i<searches.length; i++) {
+		var search = searches[i];
+		if (search.query == query) {
+			match = search;
+			break;
+		}
+	}
+	return match;
+}
+
+function getLink(search, url) {
+	var index = -1;
+	for (var i=0; i<search.links.length; i++) {
+		var link = search.links[i];
+		if (link.url == url) {
+			index = i;
+			break;
+		}
+	}
+	return index != -1 ? search["links"][index] : null;
+}
+
 function addSearch(taskIdx, query, notifyTeacher) {
-	var search = findSearchInHistory(taskIdx, query);
+	var search = getSearch(taskIdx, query);
 	if (!search) {
 		var searches = getSearches(taskIdx);
 		searches.push({"query":query, "links":[]});
@@ -302,10 +356,10 @@ function addSearch(taskIdx, query, notifyTeacher) {
 }
 
 function addLinkFollowed(taskIdx, query, url, title, notifyTeacher) {
-	var search = findSearchInHistory(taskIdx, query);
+	var search = getSearch(taskIdx, query);
 	if (search) {
-		var linkIndex = findLinkIndex(search, url);
-		if (linkIndex == -1) {
+		var link = getLink(search, url);
+		if (!link) {
 			search["links"].push({"url":url, "title":title, "rating":null});
 		}
 	
@@ -318,18 +372,17 @@ function addLinkFollowed(taskIdx, query, url, title, notifyTeacher) {
 }
 
 function addLinkRated(taskIdx, query, url, title, rating, notifyTeacher) {
-	var search = findSearchInHistory(taskIdx, query);
+	var search = getSearch(taskIdx, query);
 	if (search) {
-		var linkIndex = findLinkIndex(search, url);
-		if (linkIndex != -1) {
-			var link = search["links"][linkIndex];
+		var link = getLink(search, url);
+		if (link) {
 			if (link.rating != rating) {
-				search["links"][linkIndex].rating = rating;
+				link.rating = rating;
 				
 				// notify teacher whenenver a link is rated or the rating is changed
 				var notifyTeacher = typeof(notifyTeacher) == "undefined" ? false : notifyTeacher;
 				if (notifyTeacher) {
-					onStudentAction("link_rated", url, { "query":query, "url":url, "title":title, "rating":rating });
+					onStudentAction("link_rated", url + " ("+rating+")", { "query":query, "url":url, "title":title, "rating":rating });
 				}
 			}
 		}
@@ -346,35 +399,6 @@ function addResponse(taskIdx, response, responseNote, responseTimestamp, notifyT
 	if (notifyTeacher) {
 		onStudentAction("response", response, {"response":response, "response_note":note });
 	}
-}
-
-function findSearchInHistory(taskIdx, query) {
-	var match = null;
-	var searches = getSearches(taskIdx);
-	for (var i=0; i<searches.length; i++) {
-		var search = searches[i];
-		if (search.query == query) {
-			match = search;
-			break;
-		}
-	}
-	return match;
-}
-
-function findLinkIndex(search, url) {
-	var index = -1;
-	for (var i=0; i<search.links.length; i++) {
-		var link = search.links[i];
-		if (link.url == url) {
-			index = i;
-			break;
-		}
-	}
-	return index;
-}
-
-function getSearches(taskIdx) {
-	return gSearchHistory[taskIdx]["searches"];
 }
 
 function sortSearchesAlphabetically(taskIdx) {
@@ -395,9 +419,4 @@ function sortSearchesAlphabetically(taskIdx) {
 	});
 	
 	return {"keys":queries, "dict":dict}
-}
-
-function lastSearch(taskIdx) {
-	var searches = getSearches(taskIdx);
-	return searches[searches.length-1];
 }
