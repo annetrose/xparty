@@ -15,13 +15,13 @@ function initStudent() {
 };
 
 function initUI() {	
-	$('#activity_title').html(g_activity.title);
-	$('#activity_code').html(g_activity.activity_code);
+	$('#activity_title').html(gActivity.title);
+	$('#activity_code').html(gActivity.activity_code);
 	
 	var taskChooserHtml = '';
-	for (var i=0; i<g_activity.tasks.length; i++) {
+	for (var i=0; i<gActivity.tasks.length; i++) {
 		var taskNum = i+1;
-		var task = g_activity.tasks[i];
+		var task = gActivity.tasks[i];
 		var taskTitle = task[0];
 		taskChooserHtml += '<option id="task_title_'+i+'" value="'+taskNum+'">'+taskNum+'.&nbsp;'+taskTitle+'</option>';
 	}
@@ -84,7 +84,7 @@ function onSocketMessage(msg) {
 
 function onSocketError(error) {
 	if (error.code==401) {
-		$.post('/channel_expired/'+g_activities[0].activity_code, {}, updateChannelToken, 'json');
+		$.post('/channel_expired/'+gActivities[0].activity_code, {}, updateChannelToken, 'json');
 	}
 }
 
@@ -102,7 +102,7 @@ function updateChannelToken(data) {
 
 function onTaskChanged(taskIdx) {
 	// onTaskChanged is called from js/task_chooser.js
-	var task = g_activity.tasks[taskIdx];
+	var task = gActivity.tasks[taskIdx];
 	var description = (task[1] == '') ? '(none)' : task[1];
 	$('#task_description').html(description);
 	
@@ -125,7 +125,7 @@ function onStudentAction(actionType, actionDescription, actionData) {
 		cache: false,
 		success: function(data) {
 			if (data.status == 1) {
-				g_task_histories[data.action.task_idx].push(data.action);
+				gTaskHistories[data.action.task_idx].push(data.action);
 				if (typeof(onStudentActionComplete) == "function") {
 					onStudentActionComplete(data);
 				}

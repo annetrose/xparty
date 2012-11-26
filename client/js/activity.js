@@ -24,8 +24,8 @@ function createTeacherDashboard() {
     $('#content').html(html); 
     
     html = { "active": "", "inactive": "" };
-    for (var i=0; i<g_activities.length; i++) {
-       var activity = g_activities[i];
+    for (var i=0; i<gActivities.length; i++) {
+       var activity = gActivities[i];
     	var key = activity.is_active ? "active" : "inactive";
     	html[key] += getActivityHtml(activity);
     }   
@@ -210,8 +210,8 @@ function getTaskHtml(i, title, description, layout) {
 
 function updateActivityTypes(currentActivityType) {
 	var activityTypeHtml = '';
-	for (var i=0; i<g_activity_types.length; i++) {
-		var activityType = g_activity_types[i];
+	for (var i=0; i<gActivityTypes.length; i++) {
+		var activityType = gActivityTypes[i];
 		activityType
 		activityTypeHtml += '<option id="activity_type_'+i+'" value="'+activityType.type+'"'+(currentActivityType==activityType.type?" selected":"")+'>'+activityType.description+'</option>';
 	}
@@ -372,9 +372,9 @@ function stopAllActivities() {
 			success: function(data) {
 				if (data.status==1) {
 					var stop_time = new Date();
-					for (var i=0; i<g_activities.length; i++ ) {
-						g_activities[i].is_active = false;
-						g_activities[i].stop_time = stop_time;
+					for (var i=0; i<gActivities.length; i++ ) {
+						gActivities[i].is_active = false;
+						gActivities[i].stop_time = stop_time;
 					}
 					window.location.hash = '';
 					if (typeof updateUI == 'function') {
@@ -406,7 +406,7 @@ function cloneActivity(activityCode, updateActivities) {
 			if (data.status == 1) {
 				var clonedActivity = data.clone;
 				if (updateActivities) {
-					g_activities.push(clonedActivity);
+					gActivities.push(clonedActivity);
 					if (typeof updateUI == 'function') {
 						updateUI();
 					}
@@ -434,9 +434,9 @@ function deleteActivity(activityCode) {
 		dataType: 'json',
 		success: function(data) {
 			if (data.status==1) {
-				for( var i=0,l=g_activities.length; i<l; i++ ) {
-					if( g_activities[i].activity_code==activityCode ) {
-						g_activities.splice(i,1);
+				for( var i=0,l=gActivities.length; i<l; i++ ) {
+					if( gActivities[i].activity_code==activityCode ) {
+						gActivities.splice(i,1);
 						break;
 					}
 				}
@@ -471,7 +471,7 @@ function deleteAllActivities() {
     			dataType: 'json',
     			success: function(data) {
     				if (data.status==1) {
-    					g_activities = [];
+    					gActivities = [];
     					window.location.hash = '';
     					if (typeof updateUI == 'function') {
     					   updateUI();
@@ -514,9 +514,9 @@ function clearActivity(activityCode) {
 				if (data.status==1) {
 					var activity = getActivity(activityCode);
 					g_students = {};
-					g_task_histories = [];
+					gTaskHistories = [];
 					for (var task_idx=0; task_idx<activity.tasks.length; task_idx++) {
-						g_task_histories.push([]);
+						gTaskHistories.push([]);
 					}
 					if (typeof updateData == 'function') {
 						updateData();
@@ -642,9 +642,9 @@ function returnToParentPage() {
 
 function getActivity(activityCode) {
 	var activity = null;
-	for (var i=0; i<g_activities.length; i++ ) {
-		if (g_activities[i].activity_code==activityCode ) {
-			activity = g_activities[i];
+	for (var i=0; i<gActivities.length; i++ ) {
+		if (gActivities[i].activity_code==activityCode ) {
+			activity = gActivities[i];
 			break;
 		}
 	}
@@ -655,19 +655,19 @@ function updateActivity(activityCode, activityData) {
 	var index = -1;
 	var isNewActivity = activityCode == "";
 	if (isNewActivity) {
-		g_activities.push(activityData)
-		index = g_activities.length-1;
+		gActivities.push(activityData)
+		index = gActivities.length-1;
 	}
 	else {
-		for (var i=0; i<g_activities.length; i++ ) {
-			if (g_activities[i].activity_code==activityCode ) {
-				g_activities[i] = activityData;
+		for (var i=0; i<gActivities.length; i++ ) {
+			if (gActivities[i].activity_code==activityCode ) {
+				gActivities[i] = activityData;
 				index = i;
 				break;
 			}
 		}
 	}
-	return index != -1 ? g_activities[index] : null;
+	return index != -1 ? gActivities[index] : null;
 }
 
 function getStudentCount() {

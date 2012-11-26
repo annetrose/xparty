@@ -164,3 +164,33 @@ function clipText(s, maxLength) {
 	}
 	return s;
 }
+
+//=================================================================================
+// Sort
+//=================================================================================
+
+function sortKeysAlphabetically(dict) {
+	var keys = [];
+	for (key in dict) {
+		keys.push(key);
+	}
+	keys.sort(function(a,b) {	
+		// case insensitive sort
+		var aValue = a.toLowerCase();
+		var bValue = b.toLowerCase();
+		return (aValue > bValue ? 1 : (aValue < bValue ? -1 : 0));
+	});
+	return keys;
+}
+
+//=================================================================================
+// Misc
+//=================================================================================
+
+function isUndefined(obj) {
+	return typeof(obj) == "undefined";
+}
+
+function isDefined(obj) {
+	return !isUndefined(obj);
+}
