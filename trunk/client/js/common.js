@@ -9,6 +9,39 @@
 */
 
 //=================================================================================
+// Activity Actions
+//=================================================================================
+
+var ACTION_COLORS = { "default": "#888888" };
+
+function getActionColor(action) {
+	var type = action.action_type;
+	return isDefined(ACTION_COLORS[type]) ? ACTION_COLORS[type] : ACTION_COLORS["default"];
+}
+
+//=================================================================================
+// Strings
+//=================================================================================
+
+String.prototype.clip = function(maxLength) {
+	var dots = "...";
+	var s = this;
+	var sLength = s.length;
+	if(sLength > maxLength) {
+		s = s.substr(0, maxLength - dots.length) + dots;
+	}
+	return s;
+}
+
+String.prototype.toTitleCase = function() {
+	var A = this.split(' '), B = [];
+	for (var i = 0; A[i] !== undefined; i++) {
+		B[B.length] = A[i].substr(0, 1).toUpperCase() + A[i].substr(1);
+	}
+	return B.join(' ');
+}
+
+//=================================================================================
 // Time
 //=================================================================================
 
@@ -73,12 +106,13 @@ function parseUrl(url) {
 }
 
 function getLinkHtml(url, title, maxLength, className, onclick) {
-	var displayTitle = (maxLength !== null && maxLength !== 0) ? clipText(title, maxLength) : title;
+	var displayTitle = isDefined(maxLength) && maxLength!=-1 ? title.clip(maxLength) : title;
+	var className = isDefined(className) ? className : "normal";
 	var moreAttrs = "";
 	if (className) {
 		moreAttrs += ' class="' + className + '"';
 	}
-	if (onclick) {
+	if (isDefined(onclick)) {
 		moreAttrs += ' onclick="' + onclick + '"';
 	}
 	return '<a href="' + url + '" title="' + title + '" target="_blank" ' + moreAttrs + '>' + htmlEscape(displayTitle) + '</a>';
@@ -153,19 +187,6 @@ function showMessageDialog(msg, url) {
 }
 
 //=================================================================================
-// Strings
-//=================================================================================
-
-function clipText(s, maxLength) {
-	var dots = "...";
-	var sLength = s.length;
-	if(sLength > maxLength) {
-		s = s.substr(0, maxLength - dots.length) + dots;
-	}
-	return s;
-}
-
-//=================================================================================
 // Sort
 //=================================================================================
 
@@ -187,10 +208,10 @@ function sortKeysAlphabetically(dict) {
 // Misc
 //=================================================================================
 
-function isUndefined(obj) {
-	return typeof(obj) == "undefined";
-}
-
 function isDefined(obj) {
 	return !isUndefined(obj);
+}
+
+function isUndefined(obj) {
+	return typeof(obj) == "undefined";
 }

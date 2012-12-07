@@ -4,6 +4,7 @@
 {% block custom_head %}
 <link rel="stylesheet" type="text/css" href="/custom/css/student_search.css" />
 <script type="text/javascript" src="http://www.google.com/jsapi"></script>
+<script type="text/javascript" src="/custom/js/common_search.js"></script>
 <script type="text/javascript" src="/custom/js/student_search.js"></script>
 {% endblock %}
 
@@ -27,8 +28,8 @@
 <div id="results_container" style="display:none">
     <h5 id="rate_to_continue">Rate this page to <a href="#" onclick="switchToSearch(); return false;">return to search</a>
     <span style="white-space:nowrap">
-    <button id="helpful_button" class="cssbtn smallest" value="Helpful"><img src="/custom/imgs/check.png" alt="helpful" class="h" width="12" height="12" /> Helpful</button>
-    <button id="not_helpful_button" class="cssbtn smallest" value="Not helpful"><img src="/custom/imgs/no.png" alt="not helpful" class="nh"  width="12" height="12" /> Not helpful</button>
+    <button id="helpful_button" class="cssbtn smallest" value="Helpful"><img src="/custom/imgs/helpful.png" alt="helpful" class="h" width="12" height="12" /> Helpful</button>
+    <button id="unhelpful_button" class="cssbtn smallest" value="Not helpful"><img src="/custom/imgs/unhelpful.png" alt="not helpful" class="nh"  width="12" height="12" /> Not helpful</button>
     </span>
     </h5>
     <div id="results">

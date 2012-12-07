@@ -52,6 +52,6 @@ a.gsc-trailing-more-results:link { color: #0000CC; }
 .search_history_links li { line-height: 1.5rem;}
 .search_history_links li.helpful { margin-left: 5px; color: #739c95; }
 .search_history_links li.helpful a { border-bottom: 1px solid #739c95;  }
-.search_history_links li.not_helpful { margin-left: 5px; color: #5C091F; }
-.search_history_links li.not_helpful a { border-bottom: 1px solid #5C091F; }
+.search_history_links li.unhelpful { margin-left: 5px; color: #5C091F; }
+.search_history_links li.unhelpful a { border-bottom: 1px solid #5C091F; }
 .search_history_links li.unrated { margin-left: 5px; }

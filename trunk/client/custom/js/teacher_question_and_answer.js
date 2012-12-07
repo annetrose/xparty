@@ -9,34 +9,30 @@
 */
 
 var ANSWER_PANE = "answer";
+var ANSWER_ACTIONS = [ "answer" ];
 	
 function defineCustomPanes() {
-	gDataPanes.push({ 
-		key: ANSWER_PANE,
-		title: "Answers", 
-		action_type: "answer",
-		addDataFunction: "addAnswerItem",
-		accordionClassName: "AnswerAccordion",
-		showTagCloud: true
-	});
+	gDataPanes.push(new AnswerPane());
 }
 
 //=================================================================================
 // Answer Pane
 //=================================================================================
 
-function addAnswerItem(accumulator, action) {
-    var item = new DataItem(action.action_data.answer, action);
-    accumulator.add(item, action);
+function AnswerPane() {
+    ActionPane.call(this, ANSWER_PANE, "Answers", ANSWER_ACTIONS, { "showTagCloud":true });
+}
+AnswerPane.prototype = Object.create(ActionPane.prototype);
+
+AnswerPane.prototype.createItems = function() {
+	return new AnswerList(ANSWER_ACTIONS);
 }
 
-function AnswerAccordion(div, accumulator) {
-    AccordionList.call(this, div, accumulator);
+AnswerPane.prototype.createExpandedItems = function() {
+	return [ new StudentList(ANSWER_ACTIONS) ];
 }
-AnswerAccordion.prototype = Object.create(AccordionList.prototype);
 
-AnswerAccordion.prototype.expandedItem = function(key, i) {
-	var html = AccordionList.prototype.expandedItem.call(this, key, i);
-	html += "<h5>NEED TO ADD OTHER STUFF</h5>";
-    return html;
+function AnswerList(actionTypes) {
+	ActionList.call(this, "Answers", actionTypes, "answer");
 }
+AnswerList.prototype = Object.create(ActionList.prototype);

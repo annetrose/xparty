@@ -43,14 +43,13 @@ def activity_code_for_client_id(client_id):
     return tokens[2]
 
 def send_student_log_in(student):
-    _send_message_to_teacher(student, "log_in")
+    _send_message_to_teacher(student, None, "log_in")
 
 def send_student_log_out(student):
-    _send_message_to_teacher(student, "log_out")
+    _send_message_to_teacher(student, None, "log_out")
     
 def send_student_action(student, task_idx, action_type, action_description, action_data):
-    action_data["task_idx"] = task_idx
-    _send_message_to_teacher(student, action_type, action_description, action_data)
+    _send_message_to_teacher(student, task_idx, action_type, action_description, action_data)
 
 def _create_client_id(person_type, person_key, activity_code):
     prefix = {"teacher":"T", "student":"S"}[person_type]
@@ -89,6 +88,6 @@ def _send_message(from_person, to_person, *msg):
     for client_id in to_person.client_ids:
         channel.send_message(client_id, msg_json)
 
-def _send_message_to_teacher(student, action_type, action_description="", action_data={}):
-    msg = { "student_nickname":student.nickname, "activity_code":student.activity.activity_code, "action_type":action_type, "action_description":action_description, "action_data":action_data}
+def _send_message_to_teacher(student, task_idx, action_type, action_description="", action_data={}):
+    msg = { "student_nickname":student.nickname, "activity_code":student.activity.activity_code, "task_idx":task_idx, "action_type":action_type, "action_description":action_description, "action_data":action_data }
     _send_message(student, student.activity.teacher, msg)

@@ -10,7 +10,7 @@
 
 function initStudent() {
 	openChannel();
-	updateData();
+	initData();
 	initUI();
 };
 
@@ -42,9 +42,9 @@ function initUI() {
 }
 
 // initialize any data structures
-function updateData() {	
-	if (typeof(updateCustomData) != "undefined") {
-		updateCustomData();
+function initData() {	
+	if (typeof(initCustomData) != "undefined") {
+		initCustomData();
 	}
 }
 
