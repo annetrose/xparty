@@ -8,11 +8,10 @@
 # License: Apache License 2.0 - http://www.apache.org/licenses/LICENSE-2.0
 */
 
-THUMBS_UP_URL = "/custom/imgs/check.png"; 
-THUMBS_DOWN_URL = "/custom/imgs/no.png";
 NO_FRAME_DOMAINS = ["youtube.com", "google.com", "oprah.com", "facebook.com", "urbandictionary.com"];
 
 var gCurrentSearch = { "query":"", "url":"" };
+var gCustomSearchControl = null;
 
 google.load('search', '1', {language : 'en'});
 google.setOnLoadCallback(function() {
@@ -32,10 +31,10 @@ google.setOnLoadCallback(function() {
 	var customSearchID = '011823409747730989012:4citusfmkhu';
 	var customSearchOptions = {};
 	customSearchOptions[google.search.Search.RESTRICT_SAFESEARCH] = google.search.Search.SAFESEARCH_STRICT;
-	var customSearchControl = new google.search.CustomSearchControl(customSearchID, customSearchOptions);
-	customSearchControl.setResultSetSize(10);
-	customSearchControl.draw('custom_search_control');
-	customSearchControl.setSearchCompleteCallback(null, onSearch)
+	gCustomSearchControl = new google.search.CustomSearchControl(customSearchID, customSearchOptions);
+	gCustomSearchControl.setResultSetSize(10);
+	gCustomSearchControl.draw('custom_search_control');
+	gCustomSearchControl.setSearchCompleteCallback(null, onSearch)
 }, true);
 
 function initCustomUI() {
@@ -52,7 +51,7 @@ function initCustomUI() {
 	$("#response_note").keyup(checkResponse);
 	$("#response_save_button").click(onResponseSaved);
 	$("#helpful_button").click(onLinkRated);
-	$("#not_helpful_button").click(onLinkRated);
+	$("#unhelpful_button").click(onLinkRated);
 }
 
 function initCustomTaskUI() {
@@ -62,6 +61,9 @@ function initCustomTaskUI() {
 	$("#response_note").val(history.response_note);
 	if (history.response) $("#response_msg").html("Saved (" + getFormattedTimestamp(history.response_timestamp) + ")");
 	$("#response_save_button").attr("disabled", "disabled");
+	if (gCustomSearchControl) {
+		gCustomSearchControl.clearAllResults();
+	}
 	updateSearchHistory();
 }
 
@@ -185,7 +187,7 @@ function onLinkRated() {
 	if (search) {
 		var link = getLink(search, gCurrentSearch.url);
 		if (link) {
-			var rating = this.id == "helpful_button" ? "helpful" : "not_helpful";
+			var rating = this.id == "helpful_button" ? HELPFUL_RATING : UNHELPFUL_RATING;
 			addLinkRated(taskIdx, search.query, link.url, link.title, rating, true);
 			updateSearchHistory();
 			switchToSearch();
@@ -248,12 +250,7 @@ function updateSearchHistory() {
 					html += '<li class="' + rating + '">';
 					html += getLinkHtml(link.url, link.title, 20, rating, "return onHistoryLinkClicked(event,'"+htmlEscape(query)+"');");
 					html += "&nbsp;";
-					if (rating == "helpful") {
-						html += '<img src="' + THUMBS_UP_URL + '" width="12" height="12" alt="helpful" class="h" />';
-					}
-					else if (rating == "not_helpful") {
-						html += '<img src="' + THUMBS_DOWN_URL + '" width="12" height="12" alt="not helpful" class="nh" />';
-					}
+					html += getRatingImage(rating);
 					html += '</li>';
 				}
 				html += '</ul>';
@@ -280,7 +277,7 @@ function onHistoryLinkClicked(event, query) {
 
 var gSearchHistory = [];
 
-function updateCustomData() {
+function initCustomData() {
 	for (var taskIdx=0; taskIdx<gActivity.tasks.length; taskIdx++) {
 		var taskHistory = gTaskHistories[taskIdx];
 		gSearchHistory.push({"response":"", "response_note":"", "response_timestamp":null, "searches":[]});
@@ -289,16 +286,17 @@ function updateCustomData() {
 			var timestamp = taskHistory[i].timestamp;
 			var data = taskHistory[i].action_data;
 			switch(type) {
-				case "search":
+				case SEARCH:
 					addSearch(taskIdx, data.query);
 					break;
-				case "link":
+				case LINK_FOLLOWED:
 					addLinkFollowed(taskIdx, data.query, data.url, data.title);
 					break;
-				case "link_rated":
+				case RATED_HELPFUL:
+				case RATED_UNHELPFUL:
 					addLinkRated(taskIdx, data.query, data.url, data.title, data.rating);
 					break;
-				case "response":
+				case RESPONSE:
 					var localTime = getLocalTime(new Date(timestamp));
 					addResponse(taskIdx, data.response, data.response_note, localTime);
 					break;
@@ -349,7 +347,7 @@ function addSearch(taskIdx, query, notifyTeacher) {
 	}
 	
 	// notify teacher whenever a search is performed (even if the same search has been performed before)
-	var notifyTeacher = typeof(notifyTeacher) == "undefined" ? false : notifyTeacher;
+	var notifyTeacher = isDefined(notifyTeacher) ? notifyTeacher : false;
 	if (notifyTeacher) {
 		onStudentAction("search", query, { "query":query });
 	}
@@ -364,9 +362,9 @@ function addLinkFollowed(taskIdx, query, url, title, notifyTeacher) {
 		}
 	
 		// notify teacher whenever a link is followed (even if it has been followed before)
-		var notifyTeacher = typeof(notifyTeacher) == "undefined" ? false : notifyTeacher;
+		var notifyTeacher = isDefined(notifyTeacher) ? notifyTeacher : false;
 		if (notifyTeacher) {
-			onStudentAction("link", url, { "query":query, "url":url, "title":title });
+			onStudentAction(LINK_FOLLOWED, url, { "query":query, "url":url, "title":title });
 		}
 	}
 }
@@ -380,24 +378,24 @@ function addLinkRated(taskIdx, query, url, title, rating, notifyTeacher) {
 				link.rating = rating;
 				
 				// notify teacher whenenver a link is rated or the rating is changed
-				var notifyTeacher = typeof(notifyTeacher) == "undefined" ? false : notifyTeacher;
+				var notifyTeacher = isDefined(notifyTeacher) ? notifyTeacher : false;
 				if (notifyTeacher) {
-					onStudentAction("link_rated", url + " ("+rating+")", { "query":query, "url":url, "title":title, "rating":rating });
+					onStudentAction(rating == HELPFUL_RATING ? RATED_HELPFUL : RATED_UNHELPFUL, url, { "query":query, "url":url, "title":title, "rating":rating });
 				}
 			}
 		}
 	}	
 }
 
-function addResponse(taskIdx, response, responseNote, responseTimestamp, notifyTeacher) {
+function addResponse(taskIdx, response, note, timestamp, notifyTeacher) {
 	gSearchHistory[taskIdx].response = response;
-	gSearchHistory[taskIdx].response_note = responseNote;
-	gSearchHistory[taskIdx].response_timestamp = responseTimestamp; // local time
+	gSearchHistory[taskIdx].response_note = note;
+	gSearchHistory[taskIdx].response_timestamp = timestamp; // local time
 	
 	// notify the teacher whenever a response is submitted
-	var notifyTeacher = typeof(notifyTeacher) == "undefined" ? false : notifyTeacher;
+	var notifyTeacher = isDefined(notifyTeacher) ? notifyTeacher : false;
 	if (notifyTeacher) {
-		onStudentAction("response", response, {"response":response, "response_note":note });
+		onStudentAction(RESPONSE, response, {"response":response, "response_note":note });
 	}
 }
 

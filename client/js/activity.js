@@ -518,10 +518,10 @@ function clearActivity(activityCode) {
 					for (var task_idx=0; task_idx<activity.tasks.length; task_idx++) {
 						gTaskHistories.push([]);
 					}
-					if (typeof updateData == 'function') {
-						updateData();
+					if (typeof(initData) == "function") {
+						initData();
 					}
-					if (typeof initUI == 'function') {
+					if (typeof(initUI) == "function") {
 					    initUI();
 					}
 					showMessageDialog('All student data has been cleared from activity '+ activityCode);
@@ -668,10 +668,6 @@ function updateActivity(activityCode, activityData) {
 		}
 	}
 	return index != -1 ? gActivities[index] : null;
-}
-
-function getStudentCount() {
-	return g_students ? Object.keys(g_students).length : 0;
 }
 
 function getLoggedInStudentCount() {
