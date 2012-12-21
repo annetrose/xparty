@@ -23,6 +23,7 @@ ACTION_COLORS[RATED_UNHELPFUL] = "#5C091F";
 ACTION_COLORS[RESPONSE] = "blue";
 
 // link ratings
+UNRATED = "unrated";
 HELPFUL_RATING = "helpful";
 UNHELPFUL_RATING = "unhelpful";
 HELPFUL_IMAGE = "/custom/imgs/helpful.png"; 

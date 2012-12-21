@@ -178,16 +178,15 @@ h3 { }
 
 #data_container { margin: 0px; padding: 0px; }
 #data_pane, #content { margin: 0 0 0 5px; padding: 0px; } 
-ol.detail_list { list-style-type: none; padding-left: 0px; margin-bottom: 15px; }
-.detail_item { font-size: 13px; font-size:1.3rem; line-height:1.6em; margin: 0 0 0 2%; }
+ol.expanded_list { list-style-type: none; padding-left: 0px; margin-bottom: 15px; }
+.expanded_item { font-size: 13px; font-size:1.3rem; line-height:1.6em; margin: 0 0 0 2%; }
+.item_key { display: none; }
+.item_pane { display: none; }
 .studentLoggedOut { color: #888888; } 
 .studentLoggedIn { color: #000000; }
 
-.display_options { font-size:13px; font-size:1.3rem, line-height: 1.6em; margin-top:5px; width:100%; }
 table.task_history { font-size:13px; font-size:1.3rem; line-height:1.6em; margin:0; table-layout:fixed; width:100%; }
 table.task_history tr td { padding-right:5px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap; }
-
-.text_key { display: none; }
 
 /* Tag Clouds */
 .cloud { width:100%; text-align:center; border:2px solid #f3f1eb; background:#f5f4f0; border-radius:15px; margin-bottom:15px; }

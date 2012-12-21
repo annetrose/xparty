@@ -11,7 +11,7 @@
 // data panes
 var STUDENT_PANE = "students";
 var HISTORY_PANE = "history";
-var gCurrentPaneKey = null;
+var gCurrentPane = null;
 var gDataPanes = [];
 
 var ACTION_DIM = 6;
@@ -57,7 +57,7 @@ function initUI() {
     buttonHtml += '<button class="cssbtn" id="delete_activity_btn_'+gActivity.activity_code+'" onclick="deleteActivity(\''+gActivity.activity_code+'\')">Delete activity<span class="del"></span></button>';
     $('#side_button_bar2').html(buttonHtml);
 
-    gCurrentPaneKey = null;
+    gCurrentPane = null;
     updateUI();
 }
 
@@ -98,7 +98,7 @@ function onTaskChanged(taskIdx) {
 }
 
 $(window).resize(function() {
-	var pane = getPane(gCurrentPaneKey);
+	var pane = getPane(gCurrentPane);
 	if (pane) {
 		pane.resize();
 	}
@@ -205,7 +205,6 @@ function handleAction(action) {
 //=================================================================================
 // Data Panes
 //=================================================================================
-// TODO: which functions should be moved to data_pane.js?
 
 function definePanes() {
 	// student pane
@@ -232,18 +231,19 @@ function getPane(key) {
 }
 
 function initPaneData(taskIdx) {
-	gCurrentPaneKey = null;
+	gCurrentPane = null;
 	for (var i=0; i<gDataPanes.length; i++) {
 		gDataPanes[i].initData(taskIdx);
 	}
 }
 
-function updatePane(action) {
-	if (isDefined(action)) {
+function updatePane(data) {
+	var dataChanged = false;
+	if (isDefined(data)) {
 		var taskIdx = selectedTaskIdx();
 		for (var i=0; i<gDataPanes.length; i++) {
 			var pane = gDataPanes[i];
-			pane.updateData(action, taskIdx);
+			pane.updateData(data, taskIdx);
 			updatePaneButtonHtml(pane.getKey());
 		}
 	}
@@ -251,22 +251,22 @@ function updatePane(action) {
 	$("#num_students").html(getLoggedInStudentCount());
 
 	// refresh method checks if given action requires pane to be refreshed or not
-	var currentPane = getPane(gCurrentPaneKey);
-	currentPane.refresh(action);
+	var currentPane = getPane(gCurrentPane);
+	currentPane.refresh(data);
 }
 
 function showPane(paneKey, itemKey) {
 	pane = getPane(paneKey);
-	if (!gCurrentPaneKey || paneKey != gCurrentPaneKey) {
-		gCurrentPaneKey = paneKey;
+	if (!gCurrentPane || paneKey != gCurrentPane) {
+		gCurrentPane = paneKey;
 		$('.panebtn').removeClass("selected");
-		$("#"+getPaneButtonId(gCurrentPaneKey)).addClass("selected");
+		$("#"+getPaneButtonId(gCurrentPane)).addClass("selected");
 		pane.create($("#data_pane"));	
-		window.location.hash = gCurrentPaneKey;
+		window.location.hash = gCurrentPane;
 	}
 	
 	if (isDefined(itemKey)) {
-		pane.accordion.openItem(itemKey);
+		pane.accordion.expandItem(itemKey);
 	}
 }
 
@@ -297,20 +297,37 @@ function StudentPane(key, title, options) {
 }
 StudentPane.prototype = Object.create(ActionPane.prototype);
 
+StudentPane.prototype.createItems = function() {
+	var list = new StudentList();
+	list.defaultSortType = "Login Status";
+	return list;
+}
+
 StudentPane.prototype.createAccordion = function(div) {
 	return new StudentAccordion(div, this.items);
 }
 
-StudentPane.prototype.createItems = function() {
-	var list = new StudentList();
-	list.setSort("Login Status");
-	return list;
+StudentPane.prototype.refresh = function(data) {
+	// TODO: only refresh what has changed
+	// currently refreshed for all actions because student visual histories need to be updated	
+	this.createControls();
+	this.accordion.refresh();
+	if (this.tagcloud) {
+		this.tagcloud.refresh();
+	}
+	
+	// update open accordion section, if any
+	this.accordion.refreshExpanded();	
+}
+
+StudentPane.prototype.resize = function() {
+	this.accordion.resize();
 }
 
 StudentPane.prototype.initData = function(taskIdx) {
 	DataPane.prototype.initData.call(this, taskIdx);
 	for (var studentNickname in g_students) {
-		this.items.add(studentNickname);
+		this.items.addItems(studentNickname);
 	};
 }
 
@@ -320,26 +337,15 @@ StudentPane.prototype.updateData = function(action, taskIdx) {
 		var isNewStudent = action.action_type=="log_in" && !this.items.contains(studentNickname);
 		// add new student
 		if (isNewStudent) {
-			this.items.add(studentNickname);
+			this.items.addItems(studentNickname);
 		}
 		// otherwise, update existing student
 		else {
-			this.items.update(studentNickname);
+			this.items.updateItems(studentNickname);
+			// xx
+			if (this.items.sortType == "Login Status") this.items.needToUpdateKeys = true;
 		}
 	}	
-}
-
-StudentPane.prototype.refresh = function(data) {
-	// TODO: only refresh what has changed
-	// currently refresh for all actions because student visual histories need to be updated
-	this.accordion.create();
-	if (this.tagcloud) {
-		this.tagcloud.create();
-	}
-}
-
-StudentPane.prototype.resize = function() {
-	this.accordion.resize();
 }
 
 function StudentAccordion(div, items) {
@@ -356,15 +362,16 @@ StudentAccordion.prototype.create = function() {
 		logoutStudent($(this).val(), activityCode);
 	});
 	
-	this.drawStudentHistories(this.items.keys);
+	this.drawStudentHistories(this.items.getKeys());
 }
 
-StudentAccordion.prototype.updateItemDetails = function(div, key, i) {
+StudentAccordion.prototype.expandedAsHtml = function(key, i) {
+	alert("StudentAccordion:expandedAsHtml "+key+','+i);
 	var student = g_students[key];
 	var taskHistory = student.task_history[selectedTaskIdx()];
 	var html = "<h5>Task History</h5>\n";
 	html += taskHistoryAsHtml(taskHistory, false, false);
-	$(div).html(html);
+	return html;
 }
 
 StudentAccordion.prototype.drawStudentHistory = function(div, studentNickname) {
@@ -425,9 +432,10 @@ StudentAccordion.prototype.drawStudentHistory = function(div, studentNickname) {
 }
 
 StudentAccordion.prototype.drawStudentHistories = function() {
-	var keys = this.items.keys;
+	var keys = this.items.getKeys();
 	for (var i=0; i<keys.length; i++) {
-		this.drawStudentHistory($('#student'+(i+1)+'_history'), keys[i]); 
+		var div = $(".student_history", $('#itemheader'+(i+1)));
+		this.drawStudentHistory(div, keys[i]); 
 	};
 }
 
@@ -437,48 +445,44 @@ StudentAccordion.prototype.resize = function() {
 
 function StudentList(actionTypes) {
 	actionTypes = isDefined(actionTypes) ? actionTypes : STUDENT_ACTIONS;
-	ActionList.call(this, "Students", actionTypes);
-	this.sortType = "ABC";
-	this.sortOptions = ["ABC", "Login Status"]; 
+	ActionList.call(this, "Students", "student_nickname", actionTypes);
+	this.setSortOptions(["ABC", "Login Status"]);
+	this.defaultPane = STUDENT_PANE;
 }
 StudentList.prototype = Object.create(ActionList.prototype);
 
-StudentList.prototype.createItem = function(data) {
+StudentList.prototype.createItems = function(data) {
 	// data may be student_nickname or action
 	var studentNickname = typeof(data) == "string" ? data : data["student_nickname"];
 	var isLoggedIn = g_students[studentNickname].is_logged_in;
 	var data = { "nickname":studentNickname, "is_logged_in":isLoggedIn };
-	return new DataItem(studentNickname, data);
+	return [ new DataItem(studentNickname, data) ];
 }
 
-StudentList.prototype.itemHeaderAsHtml = function(key, i) {
-	var is_logged_in = this.getValue(key, "is_logged_in");
-	var class_name = is_logged_in===false ? "studentLoggedOut" : "studentLoggedIn";
-	var html = '<span class="' + class_name + '" style="font-size:1em;">' + key + '</span>';
-	if (is_logged_in) {
-			html += ' <button class="logout_btn" value="'+ key +'" title="Logout student">X</button>';
+StudentList.prototype.itemAsHtml = function(key, itemText, countText, pane) {
+	var pane = isDefined(pane) ? pane : (isDefined(this.defaultPane) && gCurrentPane != this.defaultPane ? this.defaultPane : undefined);
+	if (isUndefined(pane)) {
+		var is_logged_in = this.getValue(key, "is_logged_in");
+		var class_name = is_logged_in===false ? "studentLoggedOut" : "studentLoggedIn";
+		var html = '<span class="' + class_name + '">' + key + '</span>';
+		html += '<span class="item_key">' + key + '</span>';
+		if (is_logged_in) {
+				html += ' <button class="logout_btn" value="'+ key +'" title="Logout student">X</button>';
+		}
+		html += '<div class="student_history" style="float:right; margin-right:5px"></div></a>';
 	}
-	html += '<div id="student'+(i+1)+'_history" class="student_history" style="float:right; margin-right:5px"></div></a>';
-	return html;	
+	else {
+		html = ActionList.prototype.itemAsHtml.call(this, key, itemText, "", pane);
+	}
+	return html;
 }
 
-StudentList.prototype.itemAsHtml = function(key, i) {
-	return '<a href="#" class="student_item">'+key+'</a>';
-}
-
-StudentList.prototype.registerItemCallbacks = function() {
-	$(".student_item").click(function() {
-		var studentKey = $(this).html();
-		showPane(STUDENT_PANE, studentKey);
-	});
-}
-
-StudentList.prototype.isListData = function(action, taskIdx) {
+StudentList.prototype.isItemData = function(action, taskIdx) {
 	return isDefined(action) && $.inArray(action.action_type, this.actionTypes) > -1;
 }
 
 StudentList.prototype.sortKeys = function() {
-	ItemList.prototype.sortKeys.call(this);	
+	ActionList.prototype.sortKeys.call(this);	
 	// sort names alphabetically w/logged in users on top
 	if (this.sortType == "Login Status") {
 		this.sortKeysByLoginStatus();
@@ -519,6 +523,8 @@ HistoryPane.prototype.create = function(div) {
 	var taskHistory = gTaskHistories[this.taskIdx];
 	html = taskHistoryAsHtml(taskHistory);
 	$("#task_history").html(html);
+	
+	this.items.registerItemCallbacks();
 }
 
 HistoryPane.prototype.refresh = function(action) {
@@ -535,6 +541,7 @@ HistoryPane.prototype.refresh = function(action) {
 			var existingHtml = $("#task_actions").html().replace("<tbody>", "").replace("</tbody>", "");
 			$("#task_actions").html(newActionHtml + existingHtml);
 		}
+		this.items.registerItemCallbacks();
 	}
 }
 
@@ -582,12 +589,12 @@ function actionAsHtmlRow(action, includeStudent) {
 	if (typeof(defineCustomActionDescriptions) == "function") {
 		actionDescription = defineCustomActionDescriptions(action);
 	}
-	actionDescription = unescape(actionDescription);
+	//actionDescription = unescape(actionDescription);
 	var actionTime = getFormattedTimestamp(getLocalTime(new Date(action.timestamp)));
 	var html = '<tr>';
 	html += '<td style="width:17ex">' + '<div style="width:'+ACTION_DIM+'px;height:'+ACTION_DIM+'px !important;background:'+getActionColor(action)+'; float:left; margin-right:4px; margin-top:7px;">&nbsp;</div> ' + actionType + '</td>';
 	html += '<td>' + actionDescription + '</td>';
-	if (includeStudent) html += '<td style="width:13ex">'+action.student_nickname+'</td>';
+	if (includeStudent) html += '<td style="width:13ex">' + action.student_nickname + '</td>';
 	html += '<td style="width:15ex">' + actionTime + '</td>';
 	html += '</tr>';
 	return html;
@@ -598,7 +605,7 @@ function actionAsHtmlRow(action, includeStudent) {
 //=================================================================================
 
 function initData() {	
-	// initialize any data structures derived from data sent from server
+// initialize any data structures derived from data sent from server
 
 	// add history data to students
 	for (var studentNickname in g_students) {

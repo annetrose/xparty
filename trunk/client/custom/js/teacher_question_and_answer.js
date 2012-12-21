@@ -33,6 +33,6 @@ AnswerPane.prototype.createExpandedItems = function() {
 }
 
 function AnswerList(actionTypes) {
-	ActionList.call(this, "Answers", actionTypes, "answer");
+	ActionList.call(this, "Answers", "anwer", actionTypes);
 }
 AnswerList.prototype = Object.create(ActionList.prototype);

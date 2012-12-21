@@ -8,10 +8,12 @@
 # License: Apache License 2.0 - http://www.apache.org/licenses/LICENSE-2.0
 */
 
-// TODO: make counts consistent; for example, in links pane, # of queries is all queries performed - not # of students who performed query
-// TODO: students in expanded section do not have counts
-// TODO: helpful/unhelpful filters in query, word, link panes
-// TODO: calculate query ratings based on link ratings
+// TODO: display counts next to items in expanded views in teacher view
+// TODO: make counts consistent; e.g., in links pane, # of queries is show vs. # of students who performed query
+// TODO: add helpful/unhelpful filters in query, word, link panes
+// TODO: in links page, tag size should be based on # unique student visits
+// BEHAVIOR: keys used by QueryPane and WordPane are case insensitive (e.g., dog and Dog are grouped together)
+// BEHAVIOR: All responses made by user for given task are shown in ResponsePane or should only most recent be shown?
 
 // data panes
 var QUERY_PANE = "query";
@@ -32,20 +34,33 @@ function defineCustomPanes() {
 }
 
 function defineCustomActionDescriptions(action) {
-	// used by task history pane; action.action_description shown by default
+	// used to display task history in StudentPane and HistoryPane
 	// function not required if action.action_description used for all action types
 	var html = "";
+	var list = null;
 	switch(action.action_type) {
+	case SEARCH:
+		list = new QueryList();
+		break;
 	case LINK_FOLLOWED:
 	case RATED_HELPFUL:
 	case RATED_UNHELPFUL:
-		html = action.action_data.title+'<br/>';
-		html += getLinkHtml(action.action_data.url, action.action_data.url);
+		list = new LinkList();
+		break;
+	case RESPONSE:
+		list = new ResponseList();
 		break;
 	default:
+		list = null;
 		html = action.action_description;
 		break;
 	}
+	
+	if (list != null) {
+		var items = list.addItems(action);
+		html = list.itemAsHtml(items[0].getKey(), undefined, "");
+	}
+	
 	return html;
 }
 
@@ -53,13 +68,25 @@ function defineCustomActionDescriptions(action) {
 // Query Pane
 //=================================================================================
 
+// BEHAVIOR: The same link may be visited by the same student after different queries.
+// The means the student may rate the same link multiple times.  In general, the most
+// recent student rating is used to indicate how a link is rated.  However, in the
+// query pane, the link ratings shown in the expanded view reflect how the link
+// was rated for the selected query.  The same query may be performed multiple times.
+// In this case, the most recent link rating is used.
+
 function QueryPane() {
     ActionPane.call(this, QUERY_PANE, "Queries", QUERY_ACTIONS, { "showTagCloud":true });
 }
 QueryPane.prototype = Object.create(ActionPane.prototype);
 
+QueryPane.prototype.createTagCloud = function(div) {
+	return new QueryCloud(div, this.items);
+}
+
+// xx different function name? same func also used by DataList
 QueryPane.prototype.createItems = function() {
-	return new QueryList(this.actionTypes);
+	return new QueryList();
 }
 
 QueryPane.prototype.createExpandedItems = function() {
@@ -69,20 +96,168 @@ QueryPane.prototype.createExpandedItems = function() {
 	return lists;
 }
 
+QueryPane.prototype.updateData = function(data, taskIdx) {
+	ActionPane.prototype.updateData.call(this, data, taskIdx);
+	var keysChanged = this.items.updateRatings(data, taskIdx);
+	this.setItemsChanged(keysChanged);
+}
+
+function QueryCloud(div, items, options) {
+	TagCloud.call(this, div, items, options);
+}
+QueryCloud.prototype = Object.create(TagCloud.prototype);
+
+QueryCloud.prototype.getTagWeight = function(key) {
+	var weight = 0;
+	var filter = this.items.getFilter();
+	if (isDefined(filter)) {
+		var ratingCounts = this.items.getRatingCounts(key);
+		var rating = this.items.filterToRating(filter);
+		weight = ratingCounts[rating];
+	}
+	else {
+		weight = ActionCloud.prototype.getTagWeight.call(this, key);
+	}
+	return weight;
+}
+
+QueryCloud.prototype.getColors = function() {
+	var filter = this.items.getFilter();
+	if (isDefined(filter)) {
+		var rating = this.items.filterToRating(filter);
+		var color = rating == HELPFUL_RATING ? ACTION_COLORS[RATED_HELPFUL] : (rating == UNHELPFUL_RATING ? ACTION_COLORS[RATED_UNHELPFUL] : DEFAULT_TAG_COLOR);
+		return { "start": color, "end": color };	
+	}
+	else {
+		return TagCloud.prototype.getColors.call(this);
+	}
+	
+}
+
 function QueryList(actionTypes) {
-	ActionList.call(this, "Queries", actionTypes, "query");
+	var actionTypes = isDefined(actionTypes) ? actionTypes : QUERY_ACTIONS;
+	ActionList.call(this, "Queries", "query", actionTypes);
+	this.setFilters([ "Helpful", "Unhelpful", "Unrated" ]);
+	this.keyVersions = {};
+	this.ratings = {};
+	this.defaultPane = QUERY_PANE;
 }
 QueryList.prototype = Object.create(ActionList.prototype);
 
-QueryList.prototype.itemAsHtml = function(key, i) {
-	return '<a href="#" class="query_item">'+key + '</a> (' + this.getCount(key) + ')';	
+QueryList.prototype.createItems = function(action) {
+	var items = ActionList.prototype.createItems.call(this, action);
+	if (items.length > 0) {
+		var queryVersion = items[0].getKey();
+		var queryKey = queryVersion.toLowerCase();
+		items[0].key = queryKey;
+		if (isUndefined(this.keyVersions[queryKey])) {
+			this.keyVersions[queryKey] = [];
+		}
+		if ($.inArray(queryVersion, this.keyVersions[queryKey]) == -1) {
+			this.keyVersions[queryKey].push(queryVersion);
+		}
+	}
+	return items;
 }
 
-QueryList.prototype.registerItemCallbacks = function() {
-	$(".query_item").click(function() {
-		var query = $(this).html();
-		showPane(QUERY_PANE, query);
-	});
+QueryList.prototype.updateRatings = function(action, taskIdx) {	
+	// BEHAVIOR: query ratings are based on link ratings
+	// if a student doesn't rate any followed links, the query is unrated
+	// if a student rates any followed link as helpful, the query is helpful
+	// if a student rates all followed links as unhelpful, the query is unhelpful
+	// a student may rate the same link more than once after a query, if so, use the most recent rating
+	
+	// TODO: test various conditions xx
+	// TODO: clean up code
+	
+	var keysChanged = [];
+	var studentNickname = action.student_nickname;
+	
+	var newItems = this.createItems(action);
+	for (var i=0; i<newItems.length; i++) {
+		var key = newItems[i].getKey();
+		if (isUndefined(this.ratings[key])) {
+			this.ratings[key] = {};
+		}		
+		if (isUndefined(this.ratings[key][studentNickname])) {
+			this.ratings[key][studentNickname] = { "rating": UNRATED, "link_ratings": {} };
+			keysChanged.push(key);
+		}
+		
+		var isLinkRating = isDefined(action) && action.task_idx==taskIdx && $.inArray(action.action_type, LINK_ACTIONS) > -1;
+		if (isLinkRating) {
+			var url = action.action_data["url"];
+			var rating = action.action_data["rating"];
+			var linkRatings = this.ratings[key][studentNickname].link_ratings;
+			
+			if (isUndefined(linkRatings[url])) {
+				linkRatings[url] = UNRATED;
+			}
+			
+			if (isDefined(rating)) {
+				linkRatings[url] = rating;
+			}
+			
+			var queryRating = UNRATED;
+			for (url in linkRatings) {
+				if (linkRatings[url] == HELPFUL_RATING) {
+					queryRating = HELPFUL_RATING;
+					break;
+				}
+				else if (linkRatings[url] == UNHELPFUL_RATING) {
+					queryRating = UNHELPFUL_RATING;
+				}
+			}
+			
+			if (this.ratings[key][studentNickname]["rating"] != queryRating) {
+				this.ratings[key][studentNickname]["rating"] = queryRating;
+				if ($.inArray(key, keysChanged) == -1) {
+					keysChanged.push(key);
+				}
+			}
+		}
+	}
+	
+	return keysChanged;
+}
+
+QueryList.prototype.itemAsHtml = function(key, itemText, countText, pane) {
+	var itemText = isDefined(itemText) ? itemText : this.keyVersions[key].join(", ");
+	var countText = isDefined(countText) ? countText : this.ratingsAsHtml(key);
+	return ActionList.prototype.itemAsHtml.call(this, key, itemText, countText, pane);
+}
+
+QueryList.prototype.ratingsAsHtml = function(key) {
+	var countText = [];
+	var counts = this.getRatingCounts(key);
+	if (counts[HELPFUL_RATING] > 0) countText.push(getRatingImage(HELPFUL_RATING) + counts[HELPFUL_RATING]);
+	if (counts[UNHELPFUL_RATING] > 0) countText.push(getRatingImage(UNHELPFUL_RATING) + counts[UNHELPFUL_RATING]);
+	if (counts[UNRATED] > 0) countText.push(counts[UNRATED] + '&nbsp;unrated');
+	return countText.length > 0 ? countText.join(", ") : "";
+}
+
+QueryList.prototype.getRatingCounts = function(key) {
+	var counts = {};
+	counts[HELPFUL_RATING] = 0;
+	counts[UNHELPFUL_RATING] = 0;
+	counts[UNRATED] = 0;
+	for (var studentNickname in this.ratings[key]) {
+		var rating = this.ratings[key][studentNickname].rating;
+		if (rating == HELPFUL_RATING) {
+			counts[HELPFUL_RATING]++;
+		}
+		else if (rating == UNHELPFUL_RATING) {
+			counts[UNHELPFUL_RATING]++;
+		}
+		else {
+			counts[UNRATED]++;
+		}
+	}
+	return counts;
+}
+
+QueryList.prototype.filterToRating = function(filter) {
+	return filter=="Helpful" ? HELPFUL_RATING : (filter=="Unhelpful" ? UNHELPFUL_RATING : UNRATED);
 }
 
 //=================================================================================
@@ -90,64 +265,64 @@ QueryList.prototype.registerItemCallbacks = function() {
 //=================================================================================
 
 function WordPane() {
-    ActionPane.call(this, WORD_PANE, "Words", QUERY_ACTIONS, { "showTagCloud":true });
+    QueryPane.call(this);
+    this.key = WORD_PANE;
+    this.title = "Words";
 }
-WordPane.prototype = Object.create(ActionPane.prototype);
+WordPane.prototype = Object.create(QueryPane.prototype);
 
 WordPane.prototype.createItems = function() {
-	return new WordList(this.title, this.actionTypes, "query");
+	return new WordList(this.actionTypes);
 }
 
 WordPane.prototype.createExpandedItems = function() {
 	var lists = [];
 	lists.push(new StudentList(QUERY_ACTIONS));
+	lists.push(new QueryList([ SEARCH, LINK_FOLLOWED, RATED_HELPFUL, RATED_UNHELPFUL ])); // xx how to handle
 	lists.push(new LinkList());
 	return lists;
 }
 
-function WordList(title, actionTypes, keyProperty) {
-	ActionList.call(this, title, actionTypes, keyProperty);
-}
-WordList.prototype = Object.create(ActionList.prototype);
-
-WordList.prototype.createItems = function(action) {   
-    var items = [];
-    var keys = this.getActionKeys(action);
-	for (var i=0; i<keys.length; i++) {
-		items.push(new DataItem(keys[i], action));
-	}
-	return items;
-}
-
-WordList.prototype.add = function(data) {
-	var keys = [];
-	var items = this.createItems(data);
+WordPane.prototype.updateData = function(data, taskIdx) {	
+	QueryPane.prototype.updateData.call(this, data, taskIdx);
+	var items = this.items.createItems(data);
 	for (var i=0; i<items.length; i++) {
-		var item = items[i];
-		var key = item.getKey();
-		if (isUndefined(this.items[key])) {
-			this.items[key] = [];
+		var key = items[i].getKey();
+		var queryItems = this.expandedItems[key][1];
+		if (queryItems.isItemData(data, taskIdx)) {
+			queryItems.updateRatings(data, taskIdx);
 		}
-		this.items[key].push(item);
-		keys.push(key);
-	}
-	this.needToUpdateKeys = true;
-	return keys;
-}
-
-WordList.prototype.update = function(data, index) {
-	var items = this.createItems(data);
-	for (var i=0; i<items.length; i++) {
-		var item = items[i];
-		if (isUndefined(index)) index = 0;
-		var key = item.getKey();
-		this.items[key][index] = item;
 	}
 }
 
-WordList.prototype.getActionKeys = function(action) {
-	var query = action.action_data.query;
-	return query.split(" ");
+function WordList(actionTypes) {
+	QueryList.call(this, actionTypes);
+	this.title = "Words";
+	this.defaultPane = WORD_PANE;
+}
+WordList.prototype = Object.create(QueryList.prototype);
+
+WordList.prototype.createItems = function(action) {
+	var wordItems = [];
+	var queryItems = QueryList.prototype.createItems.call(this, action);
+	if (queryItems.length > 0) {
+		var query = queryItems[0].getKey();	
+		var words = query.split(" ");
+		for (var i=0; i<words.length; i++) {
+			var wordVersion = words[i];
+			var wordKey = words[i].toLowerCase();
+			if (!isStopWord(wordKey)) {
+				wordItems.push(new DataItem(wordKey, action));
+				if (isUndefined(this.keyVersions[wordKey])) {
+					this.keyVersions[wordKey] = [];
+				}
+				if ($.inArray(wordVersion, this.keyVersions[wordKey]) == -1) {
+					this.keyVersions[wordKey].push(wordVersion);
+				}
+			}
+		}
+	}
+	return wordItems;
 }
 
 //=================================================================================
@@ -159,6 +334,14 @@ function LinkPane() {
 }
 LinkPane.prototype = Object.create(ActionPane.prototype);
 
+LinkPane.prototype.createAccordion = function(div) {
+	return new LinkAccordion(div, this.items, this.expandedItems);
+}
+
+LinkPane.prototype.createTagCloud = function(div) {
+	return new LinkCloud(div, this.items);
+}
+
 LinkPane.prototype.createItems = function() {
 	return new LinkList();
 }
@@ -166,93 +349,135 @@ LinkPane.prototype.createItems = function() {
 LinkPane.prototype.createExpandedItems = function() {
 	var lists = [];
 	lists.push(new StudentList([ LINK_FOLLOWED ]));
-	lists.push(new QueryList([ LINK_FOLLOWED ]));
+	lists.push(new QueryList(LINK_ACTIONS));
 	return lists;
 }
 
-LinkPane.prototype.createAccordion = function(div) {
-	return new LinkAccordion(div, this.items, this.expandedItems);
+LinkPane.prototype.updateData = function(data, taskIdx) {	
+	ActionPane.prototype.updateData.call(this, data, taskIdx);
+	var items = this.items.createItems(data);
+	if (items.length > 0) {
+		var key = items[0].getKey();
+		var queryItems = this.expandedItems[key][1];
+		if (queryItems.isItemData(data, taskIdx)) {
+			queryItems.updateRatings(data, taskIdx);
+		}
+	}
 }
-
+	
 function LinkAccordion(div, items, expandedItems) {
-	ActionAccordion.call(this, div, items, expandedItems);
+	AccordionList.call(this, div, items, expandedItems);
 }
-LinkAccordion.prototype = Object.create(ActionAccordion.prototype);
+LinkAccordion.prototype = Object.create(AccordionList.prototype);
 
-LinkAccordion.prototype.itemDetailsAsHtml = function(key, i) {
+LinkAccordion.prototype.expandedAsHtml = function(key, i) {
 	var html = '<p class="small" style="margin-top:0px; margin-bottom:15px">' + getLinkHtml(key, "View Link") + "</p>";
-	html += ActionAccordion.prototype.itemDetailsAsHtml.call(this, key, i);
+	html += AccordionList.prototype.expandedAsHtml.call(this, key, i);
 	return html;
 }
 
+function LinkCloud(div, items, options) {
+	TagCloud.call(this, div, items, options);
+}
+LinkCloud.prototype = Object.create(TagCloud.prototype);
+
+LinkCloud.prototype.getTagWeight = function(key) {
+	var weight = 0;
+	var filter = this.items.getFilter();
+	if (isDefined(filter)) {
+		var ratingCounts = this.items.getRatingCounts(key);
+		var rating = this.items.filterToRating(filter);
+		weight = ratingCounts[rating];
+	}
+	else {
+		weight = ActionCloud.prototype.getTagWeight.call(this, key);
+	}
+	return weight;
+}
+
+LinkCloud.prototype.getColors = function() {
+	var filter = this.items.getFilter();
+	if (isDefined(filter)) {
+		var rating = this.items.filterToRating(filter);
+		var color = rating == HELPFUL_RATING ? ACTION_COLORS[RATED_HELPFUL] : (rating == UNHELPFUL_RATING ? ACTION_COLORS[RATED_UNHELPFUL] : DEFAULT_TAG_COLOR);
+		return { "start": color, "end": color };	
+	}
+	else {
+		return TagCloud.prototype.getColors.call(this);
+	}
+	
+}
+
 function LinkList() {
-	ActionList.call(this, "Links Followed", LINK_ACTIONS, "url");
+	ActionList.call(this, "Links Followed", "url", LINK_ACTIONS);
+	this.setFilters([ "Helpful", "Unhelpful", "Unrated" ]);
 	this.ratings = {};
+	this.defaultPane = LINK_PANE;
 }
 LinkList.prototype = Object.create(ActionList.prototype);
 
-LinkList.prototype.add = function(action) {
-	var item = this.createItem(action);
-	var key = item.getKey();
+LinkList.prototype.addItems = function(action) {	
+	var items = ActionList.prototype.addItems.call(this, action);
 	var studentNickname = action.student_nickname;
-
-	if (action.action_type == RATED_HELPFUL || action.action_type == RATED_UNHELPFUL) {
-		var rating = action.action_data["rating"];
-		this.ratings[key][studentNickname] = rating;
+	
+	// assume only one link per action
+	var key = items[0].getKey();
+	
+	if (isUndefined(this.ratings[key])) {
+		this.ratings[key] = {};
+	}		
+	if (isUndefined(this.ratings[key][studentNickname])) {
+		this.ratings[key][studentNickname] = UNRATED;
 	}
-	else {
-		if (isUndefined(this.items[key])) {
-			this.items[key] = [];
-			this.ratings[key] = {};
-		}
-		this.items[key].push(item);
-		
-		if (isUndefined(this.ratings[key][studentNickname])) {
-			this.ratings[key][studentNickname] = "unrated";
-		}
- 	}
-	this.needToUpdateKeys = true;
-	return [ key ];
+	if (action.action_type == RATED_HELPFUL || action.action_type == RATED_UNHELPFUL) {
+		this.ratings[key][studentNickname] = action.action_data["rating"];
+	}
+	return items;
 }
 
-LinkList.prototype.itemHeaderAsHtml = function(key, i) {
+LinkList.prototype.itemAsHtml = function(key, itemText, countText, pane) {
 	var action = this.getAction(key);
-	var ratingHtml = this.ratingsAsHtml(key);
-    return '<span style="font-size:1em;">' + action.action_data.title + ' (' + ratingHtml + ')</span>';
-}
-
-LinkList.prototype.itemAsHtml = function(key, i) {
-	var action = this.getAction(key);
-	var ratingHtml = this.ratingsAsHtml(key);
-    return '<span style="font-size:1em;">' + getLinkHtml(action.action_data.url, action.action_data.title, 50) + ' (' + ratingHtml + ')</span>';
+	var itemText = isDefined(itemText) ? itemText : action.action_data.title.clip(50);
+	var countText = isDefined(countText) ? countText : this.ratingsAsHtml(key);
+	return ActionList.prototype.itemAsHtml.call(this, key, itemText, countText, pane);
 }
 
 LinkList.prototype.ratingsAsHtml = function(key) {
-	var helpful = 0;
-	var unhelpful = 0;
-	var unrated = 0;
+	var countText = [];
+	var counts = this.getRatingCounts(key);
+	if (counts[HELPFUL_RATING] > 0) countText.push(getRatingImage(HELPFUL_RATING) + counts[HELPFUL_RATING]);
+	if (counts[UNHELPFUL_RATING] > 0) countText.push(getRatingImage(UNHELPFUL_RATING) + counts[UNHELPFUL_RATING]);
+	if (counts[UNRATED] > 0) countText.push(counts[UNRATED] + '&nbsp;unrated');
+	return countText.length > 0 ? countText.join(", ") : "";
+}
+
+LinkList.prototype.getRatingCounts = function(key) {
+	var counts = {};
+	counts[HELPFUL_RATING] = 0;
+	counts[UNHELPFUL_RATING] = 0;
+	counts[UNRATED] = 0;
 	for (var studentNickname in this.ratings[key]) {
 		var rating = this.ratings[key][studentNickname];
 		if (rating == HELPFUL_RATING) {
-			helpful++;
+			counts[HELPFUL_RATING]++;
 		}
 		else if (rating == UNHELPFUL_RATING) {
-			unhelpful++;
+			counts[UNHELPFUL_RATING]++;
 		}
 		else {
-			unrated++;
+			counts[UNRATED]++;
 		}
-	}	
-	var countText = [];
-	if (helpful > 0) countText.push(getRatingImage(HELPFUL_RATING) + '&nbsp;' + helpful);
-	if (unhelpful > 0) countText.push(getRatingImage(UNHELPFUL_RATING) + '&nbsp;' + unhelpful);
-	if (unrated > 0) countText.push(unrated + '&nbsp;unrated');
-	return countText.join(", ");
+	}
+	return counts;
 }
 
-LinkList.prototype.getSortValue = function(key) {
+LinkList.prototype.getValueForSort = function(key) {
 	var action = this.getAction(key);
 	return action.action_data.title;
+}
+
+LinkList.prototype.filterToRating = function(filter) {
+	return filter=="Helpful" ? HELPFUL_RATING : (filter=="Unhelpful" ? UNHELPFUL_RATING : UNRATED);
 }
 
 //=================================================================================
@@ -265,9 +490,58 @@ function ResponsePane() {
 ResponsePane.prototype = Object.create(ActionPane.prototype);
 
 ResponsePane.prototype.createItems = function() {
-	return new ActionList("Responses", RESPONSE_ACTIONS, "response");
+	return new ResponseList();
 }
 
 ResponsePane.prototype.createExpandedItems = function() {
 	return [ new StudentList(RESPONSE_ACTIONS) ];
+}
+
+function ResponseList() {
+	ActionList.call(this, "Responses", "response", RESPONSE_ACTIONS);
+	this.defaultPane = RESPONSE_PANE;
+}
+ResponseList.prototype = Object.create(ActionList.prototype);
+
+//=================================================================================
+// Language and Stemming
+//=================================================================================
+
+var STOP_WORDS = [ "a", "am", "an", "and", "been", "by", "in", "is", "or", "the", "was", "were" ];
+
+function isStopWord(word) {
+	var stopWordsSet = isStopWord._stopWordsSet;
+	if (isUndefined(stopWordsSet)) {
+		var stopWordsSet = {};
+		var numStopWords = STOP_WORDS.length;
+		for(var i=0; i<numStopWords; i++) {
+			stopWordsSet[STOP_WORDS[i]] = true;
+		}
+		isStopWord._stopWordsSet = stopWordsSet;
+	}
+	return isDefined(stopWordsSet[word]);
+}
+
+function getWordStem(word) {
+	var stemCache = getWordStem._stemCache;
+	if (isUndefined(getWordStem.stemCache)) {
+		stemCache = getWordStem._stemCache = {};
+	}
+	var stem = stemCache[word];
+
+	if (isUndefined(stem)) {
+		var snowballStemmer = getWordStem._snowballStemmer;
+		if (isUndefined(snowballStemmer)) {
+			snowballStemmer = getWordStem._snowballStemmer = new Snowball("english");
+		}
+		snowballStemmer.setCurrent(word);
+		snowballStemmer.stem();
+		stem = snowballStemmer.getCurrent();
+		stemCache[word] = stem;
+	}
+	return stem;
+}
+
+function normalizeSpacing(s) {
+	return s.replace(/\s+/g, " ").trim();
 }
