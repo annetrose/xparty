@@ -246,7 +246,7 @@ function updateSearchHistory() {
 				html += '<ul class="search_history_links">';
 				for (var j=0; j<links.length; j++) {
 					var link = links[j];
-					var rating = link.rating == null ? "unrated" : link.rating;
+					var rating = link.rating == null ? UNRATED : link.rating;
 					html += '<li class="' + rating + '">';
 					html += getLinkHtml(link.url, link.title, 20, rating, "return onHistoryLinkClicked(event,'"+htmlEscape(query)+"');");
 					html += "&nbsp;";
@@ -263,7 +263,7 @@ function updateSearchHistory() {
 }
 
 function onHistoryLinkClicked(event, query) {
-	// TODO: Followed link not recorded again.  Should it be?
+	// BEHAVIOR: Links clicked in history are not recorded again.  Should they be?
 	var url = event.target.href;
 	var title = event.target.title;
 	gCurrentSearch = { "query":htmlUnescape(query), "url":url };
