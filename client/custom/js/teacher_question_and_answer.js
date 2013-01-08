@@ -24,15 +24,15 @@ function AnswerPane() {
 }
 AnswerPane.prototype = Object.create(ActionPane.prototype);
 
-AnswerPane.prototype.createItems = function() {
+AnswerPane.prototype.createList = function() {
 	return new AnswerList(ANSWER_ACTIONS);
 }
 
-AnswerPane.prototype.createExpandedItems = function() {
+AnswerPane.prototype.createExpandedLists = function() {
 	return [ new StudentList(ANSWER_ACTIONS) ];
 }
 
 function AnswerList(actionTypes) {
-	ActionList.call(this, "Answers", "anwer", actionTypes);
+	ActionList.call(this, "Answers", "answer", actionTypes);
 }
 AnswerList.prototype = Object.create(ActionList.prototype);

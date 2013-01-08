@@ -32,14 +32,14 @@ def init_activity_js(activity):
 @register.filter
 def init_students_js(students):
     tag_file = os.path.join(os.path.dirname(__file__), 'student_js.html')
-    return template.render(tag_file, { 'students' : students })
+    return template.render(tag_file, { 'students' : students, 'list' : True })
 
 @register.filter
 def init_student_js(student):
     students = []
     students.append(student)
     tag_file = os.path.join(os.path.dirname(__file__), 'student_js.html')
-    return template.render(tag_file, { 'students' : students })
+    return template.render(tag_file, { 'students' : students, 'list' : False })
 
 @register.filter
 def init_task_histories_js(histories):

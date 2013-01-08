@@ -33,15 +33,6 @@ function initCustomTaskUI() {
     $('#msg').html("");
 }
 
-function getAnswer() {
-    // current implementation assumes all recorded actions are answers
-    var task_idx = selectedTaskIdx();
-    var task_history = gTaskHistories[task_idx];
-    var answer = task_history.length > 0 ? task_history[task_history.length-1].action_data.answer : "";
-    var status = task_history.length > 0 ? "Submitted " + getFormattedTimestamp(getLocalTime(new Date(task_history[task_history.length-1].timestamp))) : "";
-    return { "answer" : answer, "status" : status };
-}
-
 function sendAnswer() {
     var prev_answer = getAnswer()["answer"];
     var answer = $("#answer").val();
@@ -61,4 +52,13 @@ function sendAnswer() {
             $('#msg').html("Congratulations! You have finished this activity.");
         }
     }
+}
+
+function getAnswer() {
+    // current implementation assumes all recorded actions are answers
+    var task_idx = selectedTaskIdx();
+    var task_history = gTaskHistories[task_idx];
+    var answer = task_history.length > 0 ? task_history[task_history.length-1].action_data.answer : "";
+    var status = task_history.length > 0 ? "Submitted " + getFormattedTimestamp(getLocalTime(new Date(task_history[task_history.length-1].timestamp))) : "";
+    return { "answer" : answer, "status" : status };
 }

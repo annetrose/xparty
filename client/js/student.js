@@ -8,6 +8,40 @@
 # License: Apache License 2.0 - http://www.apache.org/licenses/LICENSE-2.0
 */
 
+/***********************************************************************************
+TODO: Finish writing instructions
+HOW TO CREATE A CUSTOM STUDENT VIEW FOR AN ACTIVITY TYPE
+
+* Create an html file in server/view/custom_templates named student_xxx.html 
+  where xxx is the activity type. Use underscores instead of spaces in xxx 
+  (no other special characters allowed).
+  
+  {% block custom_head %} should load any custom javascript, css, etc.
+  {% block task_gui %} should load the UI for a task.
+  
+* Create a javascript file in client/custom/js named student_xxx.js
+  where xxx is the activity type.  Load js in student_xxx.html.
+  
+  (Optional) Implement initCustomUI().
+  (Optional) Implement initCustomTaskUI().
+  (Optional) Implement initCustomData() to initialize any custom data structures.
+  (Optional) Implement onStudentActionComplete().
+
+***********************************************************************************/
+
+//=================================================================================
+// Global Variables
+//=================================================================================
+
+// TODO: Add definitions
+var gActivity = {};
+var gStudent = {};
+var gTaskHistories = [];
+
+//=================================================================================
+// Initialize UI
+//=================================================================================
+
 function initStudent() {
 	openChannel();
 	initData();
@@ -41,13 +75,6 @@ function initUI() {
     onTaskChanged(taskIdx);
 }
 
-// initialize any data structures
-function initData() {	
-	if (typeof(initCustomData) != "undefined") {
-		initCustomData();
-	}
-}
-
 //=================================================================================
 // Channel Presence
 //=================================================================================
@@ -73,9 +100,7 @@ function onSocketMessage(msg) {
 	for (var i=0; i<num_updates; i++) {
 		var update = updates[i];
 		switch (update.type) {	
-			// TODO: handle activity messages
-//			case "xx":
-//				break;	
+			// TODO: handle messages sent to student
 			default:
 				break;
 		}
@@ -135,4 +160,14 @@ function onStudentAction(actionType, actionDescription, actionData) {
             }
 		}
 	});
+}
+
+//=================================================================================
+// Initialize Data
+//=================================================================================
+
+function initData() {   
+    if (typeof(initCustomData) == "function") {
+        initCustomData();
+    }
 }

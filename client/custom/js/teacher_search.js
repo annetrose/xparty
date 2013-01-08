@@ -8,12 +8,10 @@
 # License: Apache License 2.0 - http://www.apache.org/licenses/LICENSE-2.0
 */
 
-// TODO: display counts next to items in expanded views in teacher view
-// TODO: make counts consistent; e.g., in links pane, # of queries is show vs. # of students who performed query
-// TODO: add helpful/unhelpful filters in query, word, link panes
-// TODO: in links page, tag size should be based on # unique student visits
+// BEHAVIOR: a query is found to be helpful if at least one link followed is rated helpful
+// BEHAVIOR: counts displayed represent number of students who did something (e.g., 3 students found query cat to be helpful)
 // BEHAVIOR: keys used by QueryPane and WordPane are case insensitive (e.g., dog and Dog are grouped together)
-// BEHAVIOR: All responses made by user for given task are shown in ResponsePane or should only most recent be shown?
+// BEHAVIOR: all responses made by user for given task are shown in ResponsePane or should only most recent be shown?
 
 // data panes
 var QUERY_PANE = "query";
@@ -81,15 +79,14 @@ function QueryPane() {
 QueryPane.prototype = Object.create(ActionPane.prototype);
 
 QueryPane.prototype.createTagCloud = function(div) {
-	return new QueryCloud(div, this.items);
+	return new QueryCloud(div, this.list);
 }
 
-// xx different function name? same func also used by DataList
-QueryPane.prototype.createItems = function() {
+QueryPane.prototype.createList = function() {
 	return new QueryList();
 }
 
-QueryPane.prototype.createExpandedItems = function() {
+QueryPane.prototype.createExpandedLists = function() {
 	var lists = [];
 	lists.push(new StudentList(QUERY_ACTIONS));
 	lists.push(new LinkList());
@@ -98,7 +95,7 @@ QueryPane.prototype.createExpandedItems = function() {
 
 QueryPane.prototype.updateData = function(data, taskIdx) {
 	ActionPane.prototype.updateData.call(this, data, taskIdx);
-	var keysChanged = this.items.updateRatings(data, taskIdx);
+	var keysChanged = this.list.updateRatings(data, taskIdx);
 	this.setItemsChanged(keysChanged);
 }
 
@@ -109,10 +106,10 @@ QueryCloud.prototype = Object.create(TagCloud.prototype);
 
 QueryCloud.prototype.getTagWeight = function(key) {
 	var weight = 0;
-	var filter = this.items.getFilter();
+	var filter = this.list.getFilter();
 	if (isDefined(filter)) {
-		var ratingCounts = this.items.getRatingCounts(key);
-		var rating = this.items.filterToRating(filter);
+		var ratingCounts = this.list.getRatingCounts(key);
+		var rating = this.list.filterToRating(filter);
 		weight = ratingCounts[rating];
 	}
 	else {
@@ -122,9 +119,9 @@ QueryCloud.prototype.getTagWeight = function(key) {
 }
 
 QueryCloud.prototype.getColors = function() {
-	var filter = this.items.getFilter();
+	var filter = this.list.getFilter();
 	if (isDefined(filter)) {
-		var rating = this.items.filterToRating(filter);
+		var rating = this.list.filterToRating(filter);
 		var color = rating == HELPFUL_RATING ? ACTION_COLORS[RATED_HELPFUL] : (rating == UNHELPFUL_RATING ? ACTION_COLORS[RATED_UNHELPFUL] : DEFAULT_TAG_COLOR);
 		return { "start": color, "end": color };	
 	}
@@ -140,7 +137,7 @@ function QueryList(actionTypes) {
 	this.setFilters([ "Helpful", "Unhelpful", "Unrated" ]);
 	this.keyVersions = {};
 	this.ratings = {};
-	this.defaultPane = QUERY_PANE;
+	this.defaultPaneKey = QUERY_PANE;
 }
 QueryList.prototype = Object.create(ActionList.prototype);
 
@@ -165,25 +162,34 @@ QueryList.prototype.updateRatings = function(action, taskIdx) {
 	// if a student doesn't rate any followed links, the query is unrated
 	// if a student rates any followed link as helpful, the query is helpful
 	// if a student rates all followed links as unhelpful, the query is unhelpful
-	// a student may rate the same link more than once after a query, if so, use the most recent rating
-	
-	// TODO: test various conditions xx
-	// TODO: clean up code
-	
+	// a student may rate the same link more than once after a query, if so, the most recent rating is used
+		
 	var keysChanged = [];
 	var studentNickname = action.student_nickname;
 	
 	var newItems = this.createItems(action);
 	for (var i=0; i<newItems.length; i++) {
 		var key = newItems[i].getKey();
+		
+		// check if query has been performed before
+		// if not, initialize query ratings
+		//
 		if (isUndefined(this.ratings[key])) {
 			this.ratings[key] = {};
-		}		
+		}
+				
+	    // check if this student has rated this query before
+	    // if not, initialize query ratings for this student
+	    // where rating is overall query rating and link_ratings
+	    // are most recent ratings for followed links (key is link url and value is rating)
+	    //
 		if (isUndefined(this.ratings[key][studentNickname])) {
 			this.ratings[key][studentNickname] = { "rating": UNRATED, "link_ratings": {} };
 			keysChanged.push(key);
 		}
 		
+		// if student rated a link, update ratings as needed
+		//
 		var isLinkRating = isDefined(action) && action.task_idx==taskIdx && $.inArray(action.action_type, LINK_ACTIONS) > -1;
 		if (isLinkRating) {
 			var url = action.action_data["url"];
@@ -209,6 +215,7 @@ QueryList.prototype.updateRatings = function(action, taskIdx) {
 				}
 			}
 			
+			// if rating changed, return key to mark item as changed
 			if (this.ratings[key][studentNickname]["rating"] != queryRating) {
 				this.ratings[key][studentNickname]["rating"] = queryRating;
 				if ($.inArray(key, keysChanged) == -1) {
@@ -221,10 +228,10 @@ QueryList.prototype.updateRatings = function(action, taskIdx) {
 	return keysChanged;
 }
 
-QueryList.prototype.itemAsHtml = function(key, itemText, countText, pane) {
+QueryList.prototype.itemAsHtml = function(key, itemText, countText, paneKey) {
 	var itemText = isDefined(itemText) ? itemText : this.keyVersions[key].join(", ");
 	var countText = isDefined(countText) ? countText : this.ratingsAsHtml(key);
-	return ActionList.prototype.itemAsHtml.call(this, key, itemText, countText, pane);
+	return ActionList.prototype.itemAsHtml.call(this, key, itemText, countText, paneKey);
 }
 
 QueryList.prototype.ratingsAsHtml = function(key) {
@@ -271,26 +278,26 @@ function WordPane() {
 }
 WordPane.prototype = Object.create(QueryPane.prototype);
 
-WordPane.prototype.createItems = function() {
+WordPane.prototype.createList = function() {
 	return new WordList(this.actionTypes);
 }
 
-WordPane.prototype.createExpandedItems = function() {
+WordPane.prototype.createExpandedLists = function() {
 	var lists = [];
 	lists.push(new StudentList(QUERY_ACTIONS));
-	lists.push(new QueryList([ SEARCH, LINK_FOLLOWED, RATED_HELPFUL, RATED_UNHELPFUL ])); // xx how to handle
+	lists.push(new QueryList([ SEARCH, LINK_FOLLOWED, RATED_HELPFUL, RATED_UNHELPFUL ]));
 	lists.push(new LinkList());
 	return lists;
 }
 
 WordPane.prototype.updateData = function(data, taskIdx) {	
 	QueryPane.prototype.updateData.call(this, data, taskIdx);
-	var items = this.items.createItems(data);
-	for (var i=0; i<items.length; i++) {
-		var key = items[i].getKey();
-		var queryItems = this.expandedItems[key][1];
-		if (queryItems.isItemData(data, taskIdx)) {
-			queryItems.updateRatings(data, taskIdx);
+	var list = this.list.createItems(data);
+	for (var i=0; i<list.length; i++) {
+		var key = list[i].getKey();
+		var queryList = this.expandedLists[key][1];
+		if (queryList.isItemData(data, taskIdx)) {
+			queryList.updateRatings(data, taskIdx);
 		}
 	}
 }
@@ -298,7 +305,7 @@ WordPane.prototype.updateData = function(data, taskIdx) {
 function WordList(actionTypes) {
 	QueryList.call(this, actionTypes);
 	this.title = "Words";
-	this.defaultPane = WORD_PANE;
+	this.defaultPaneKey = WORD_PANE;
 }
 WordList.prototype = Object.create(QueryList.prototype);
 
@@ -335,18 +342,18 @@ function LinkPane() {
 LinkPane.prototype = Object.create(ActionPane.prototype);
 
 LinkPane.prototype.createAccordion = function(div) {
-	return new LinkAccordion(div, this.items, this.expandedItems);
+	return new LinkAccordion(div, this.list, this.expandedLists);
 }
 
 LinkPane.prototype.createTagCloud = function(div) {
-	return new LinkCloud(div, this.items);
+	return new LinkCloud(div, this.list);
 }
 
-LinkPane.prototype.createItems = function() {
+LinkPane.prototype.createList = function() {
 	return new LinkList();
 }
 
-LinkPane.prototype.createExpandedItems = function() {
+LinkPane.prototype.createExpandedLists = function() {
 	var lists = [];
 	lists.push(new StudentList([ LINK_FOLLOWED ]));
 	lists.push(new QueryList(LINK_ACTIONS));
@@ -355,12 +362,12 @@ LinkPane.prototype.createExpandedItems = function() {
 
 LinkPane.prototype.updateData = function(data, taskIdx) {	
 	ActionPane.prototype.updateData.call(this, data, taskIdx);
-	var items = this.items.createItems(data);
-	if (items.length > 0) {
-		var key = items[0].getKey();
-		var queryItems = this.expandedItems[key][1];
-		if (queryItems.isItemData(data, taskIdx)) {
-			queryItems.updateRatings(data, taskIdx);
+	var list = this.list.createItems(data);
+	if (list.length > 0) {
+		var key = list[0].getKey();
+		var queryList = this.expandedLists[key][1];
+		if (queryList.isItemData(data, taskIdx)) {
+			queryList.updateRatings(data, taskIdx);
 		}
 	}
 }
@@ -383,10 +390,10 @@ LinkCloud.prototype = Object.create(TagCloud.prototype);
 
 LinkCloud.prototype.getTagWeight = function(key) {
 	var weight = 0;
-	var filter = this.items.getFilter();
+	var filter = this.list.getFilter();
 	if (isDefined(filter)) {
-		var ratingCounts = this.items.getRatingCounts(key);
-		var rating = this.items.filterToRating(filter);
+		var ratingCounts = this.list.getRatingCounts(key);
+		var rating = this.list.filterToRating(filter);
 		weight = ratingCounts[rating];
 	}
 	else {
@@ -396,9 +403,9 @@ LinkCloud.prototype.getTagWeight = function(key) {
 }
 
 LinkCloud.prototype.getColors = function() {
-	var filter = this.items.getFilter();
+	var filter = this.list.getFilter();
 	if (isDefined(filter)) {
-		var rating = this.items.filterToRating(filter);
+		var rating = this.list.filterToRating(filter);
 		var color = rating == HELPFUL_RATING ? ACTION_COLORS[RATED_HELPFUL] : (rating == UNHELPFUL_RATING ? ACTION_COLORS[RATED_UNHELPFUL] : DEFAULT_TAG_COLOR);
 		return { "start": color, "end": color };	
 	}
@@ -412,7 +419,7 @@ function LinkList() {
 	ActionList.call(this, "Links Followed", "url", LINK_ACTIONS);
 	this.setFilters([ "Helpful", "Unhelpful", "Unrated" ]);
 	this.ratings = {};
-	this.defaultPane = LINK_PANE;
+	this.defaultPaneKey = LINK_PANE;
 }
 LinkList.prototype = Object.create(ActionList.prototype);
 
@@ -435,11 +442,11 @@ LinkList.prototype.addItems = function(action) {
 	return items;
 }
 
-LinkList.prototype.itemAsHtml = function(key, itemText, countText, pane) {
+LinkList.prototype.itemAsHtml = function(key, itemText, countText, paneKey) {
 	var action = this.getAction(key);
 	var itemText = isDefined(itemText) ? itemText : action.action_data.title.clip(50);
 	var countText = isDefined(countText) ? countText : this.ratingsAsHtml(key);
-	return ActionList.prototype.itemAsHtml.call(this, key, itemText, countText, pane);
+	return ActionList.prototype.itemAsHtml.call(this, key, itemText, countText, paneKey);
 }
 
 LinkList.prototype.ratingsAsHtml = function(key) {
@@ -489,17 +496,17 @@ function ResponsePane() {
 }
 ResponsePane.prototype = Object.create(ActionPane.prototype);
 
-ResponsePane.prototype.createItems = function() {
+ResponsePane.prototype.createList = function() {
 	return new ResponseList();
 }
 
-ResponsePane.prototype.createExpandedItems = function() {
+ResponsePane.prototype.createExpandedLists = function() {
 	return [ new StudentList(RESPONSE_ACTIONS) ];
 }
 
 function ResponseList() {
 	ActionList.call(this, "Responses", "response", RESPONSE_ACTIONS);
-	this.defaultPane = RESPONSE_PANE;
+	this.defaultPaneKey = RESPONSE_PANE;
 }
 ResponseList.prototype = Object.create(ActionList.prototype);
 

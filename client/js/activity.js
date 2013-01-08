@@ -513,7 +513,7 @@ function clearActivity(activityCode) {
 			success: function(data) {
 				if (data.status==1) {
 					var activity = getActivity(activityCode);
-					g_students = {};
+					gStudents = {};
 					gTaskHistories = [];
 					for (var task_idx=0; task_idx<activity.tasks.length; task_idx++) {
 						gTaskHistories.push([]);
@@ -672,9 +672,9 @@ function updateActivity(activityCode, activityData) {
 
 function getLoggedInStudentCount() {
 	var numStudents = 0;
-	if (g_students) {
-		for (var student_nickname in g_students) {
-			if (g_students[student_nickname].is_logged_in) {
+	if (gStudents) {
+		for (var student_nickname in gStudents) {
+			if (gStudents[student_nickname].is_logged_in) {
 				numStudents++;
 			}
 		}

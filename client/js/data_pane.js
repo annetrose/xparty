@@ -12,7 +12,11 @@
 // http://www.javascriptkit.com/javatutors/oopjs2.shtml  (constructors)
 // http://www.javascriptkit.com/javatutors/oopjs3.shtml  (inheritance)
 	
+// BEHAVIOR: One DataPane displayed in the teacher view at all times
+// BEHAVIOR: Every DataPane has an AccordionList and an optional TagCloud
+
 // TODO: refresh accordion/tagcloud more efficiently
+// TODO: write descriptions of classes
 
 //=================================================================================
 // DataList - used by DataPane to display UI objects
@@ -24,9 +28,9 @@ function DataList(title, keyProperty) {
 	this.keys = [];
 	this.items = {};
 	this.setFilters([]);
-	this.setSortOptions(["ABC", "Frequency"]);
+	this.setSortOptions([ SORT_ALPHABETICALLY, SORT_BY_FREQUENCY ]);
 	this.needToUpdateKeys = true;
-	this.defaultPane = undefined;
+	this.defaultPaneKey = undefined;
 }
 
 DataList.prototype.isItemData = function(data, taskIdx) {
@@ -63,20 +67,21 @@ DataList.prototype.updateItems = function(data, index) {
 	}
 }
 
-DataList.prototype.itemAsHtml = function(key, itemText, countText, pane) {
+DataList.prototype.itemAsHtml = function(key, itemText, countText, paneKey) {
 	// returns html for displaying the items grouped by the same key (e.g., this.items[key])
 	//
 	// Format: item (count)
-	// item = itemText if defined; otherwise key; it is a link to another pane if pane is defined
+	// item = itemText if defined; otherwise key; it is a link to another pane if paneKey is defined
 	// count = countText if defined; otherwise key count; not displayed if countText=""
 	//
 	var itemText = isDefined(itemText) ? itemText : key;
 	var countText = isDefined(countText) ? countText : this.getCount(key);
-	var pane = isDefined(pane) ? pane : (isDefined(this.defaultPane) && gCurrentPane != this.defaultPane ? this.defaultPane : undefined);
-	var html = isDefined(pane) ? '<a href="#" class="item_link">' : "";
+    var currentPaneKey = getCurrentPaneKey();
+	var paneKey = isDefined(paneKey) ? paneKey : (isDefined(this.defaultPaneKey) && currentPaneKey != this.defaultPaneKey ? this.defaultPaneKey : undefined);	
+	var html = isDefined(paneKey) ? '<a href="#" class="item_link">' : "";
 	html += itemText;
 	html += '<span class="item_key">' + key + '</span>';
-	html += isDefined(pane) ? '<span class="item_pane">'+pane+'</span></a>' : "";
+	html += isDefined(paneKey) ? '<span class="item_pane">'+paneKey+'</span></a>' : "";
 	html += isDefined(countText) && countText != "" ? ' (' + countText + ')' : "";
 	return html;
 }
@@ -169,10 +174,10 @@ DataList.prototype.sortKeys = function() {
 		this.keys.push(key);
 	}
 	
-	if (this.sortType == "Frequency") {
+	if (this.sortType == SORT_BY_FREQUENCY) {
 		this.sortKeysByFrequency();
 	}
-	else if (this.sortType == "ABC") {
+	else if (this.sortType == SORT_ALPHABETICALLY) {
 		this.sortKeysAlphabetically();
 	}
 }
@@ -188,14 +193,14 @@ DataList.prototype.sortKeysAlphabetically = function() {
 }
 
 DataList.prototype.sortKeysByFrequency = function() {	
-	var items = this;
+	var list = this;
 	this.keys.sort(function(a,b) {
-		var aCount = items.getCount(a);
-		var bCount = items.getCount(b);
+		var aCount = list.getCount(a);
+		var bCount = list.getCount(b);
 		var result = (aCount > bCount ? -1 : (aCount < bCount ? 1 : 0));
 		if (result===0) {
-			var aValue = items.getValueForSort(a).toLowerCase();
-			var bValue = items.getValueForSort(b).toLowerCase();
+			var aValue = list.getValueForSort(a).toLowerCase();
+			var bValue = list.getValueForSort(b).toLowerCase();
 			result = (aValue > bValue ? 1 : (aValue < bValue ? -1 : 0));
 		}
 		return result;
@@ -247,8 +252,8 @@ function DataPane(key, title, options) {
 	this.title = title;
 	this.options = options;
 
-	this.items = null;
-	this.expandedItems = {};
+	this.list = null;
+	this.expandedLists = {};
 	this.accordion = null;
 	this.tagcloud = null;
 	this.taskIdx = 0;
@@ -256,35 +261,36 @@ function DataPane(key, title, options) {
 }
 
 DataPane.prototype.isPaneData = function(data) {
-	return this.items && this.items.isItemData(data, this.taskIdx);
+	return this.list && this.list.isItemData(data, this.taskIdx);
 }
 
-DataPane.prototype.createItems = function() {
+DataPane.prototype.createList = function() {
     return new DataList();
 }
 
-DataPane.prototype.createExpandedItems = function() {
-	// items shown in expanded accordion view (array of DataList)
+DataPane.prototype.createExpandedLists = function() {
+	// lists shown in expanded accordion view (array of DataList)
 	return [];
 }
 
 DataPane.prototype.createAccordion = function(div) {
-	return new AccordionList(div, this.items, this.expandedItems);
+	return new AccordionList(div, this.list, this.expandedLists);
 }
 
 DataPane.prototype.createTagCloud = function(div) {
-	return new TagCloud(div, this.items);
+	return new TagCloud(div, this.list);
 }
 
 DataPane.prototype.create = function(div) {
     var html = '<h3 id="pane_title" style="margin-bottom:10px">'+this.title+'</h3>';
+    html += '<div id="pane_key" style="display:none">'+this.key+'</div>';
     html += '<div id="filters"></div>';
     html += '<div id="tag_cloud" class="tag_cloud"></div>';
     html += '<div id="sort_options"></div>';
     html += '<div id="accordion_list" class="accordion2"></div>';
     div.html(html);
 
-	this.items.setDefaults();
+	this.list.setDefaults();
 	
     this.accordion = this.createAccordion($("#accordion_list"));
     this.accordion.create();
@@ -299,7 +305,7 @@ DataPane.prototype.create = function(div) {
 }
 
 DataPane.prototype.createControls = function() {
-	if (this.items.getKeys().length > 0) {
+	if (this.list.getKeys().length > 0) {
 		this.createSortOptions();
 		this.createFilters();
 	}
@@ -307,22 +313,23 @@ DataPane.prototype.createControls = function() {
 
 DataPane.prototype.createSortOptions = function() {
 	var html = "";
-	var sortOptions = this.items.getSortOptions();
+	var sortOptions = this.list.getSortOptions();
 	if (sortOptions.length > 1) {
 		html += '<span style="margin-right:10px;">';
 		html += 'Sort by: ';
 		for (var i=0; i<sortOptions.length; i++) {
 			var option = sortOptions[i];
-			html += this.items.isCurrentSortOption(option) ? '<strong>'+option + '</strong> ' : '<a href="#" class="sort">'+option+'</a> ';
+			html += this.list.isCurrentSortOption(option) ? '<strong>'+option + '</strong> ' : '<a href="#" class="sort">'+option+'</a> ';
 		}
 		html += '</span>';
 	}
 	$("#sort_options").html(html);
+	$("#sort_options").data("pane", this);
 	
-	var pane = this;
 	$('.sort').click(function(event) {
 		// sorts the accordion and the tag cloud
-		pane.items.setSortOption($(this).html());
+		var pane = $("#sort_options").data("pane");
+		pane.list.setSortOption($(this).html());
 		pane.refresh();
 		return false;
 	});
@@ -330,22 +337,23 @@ DataPane.prototype.createSortOptions = function() {
 
 DataPane.prototype.createFilters = function() {
 	var html = "";
-	var filters = this.items.getFilters();
+	var filters = this.list.getFilters();
 	if (filters.length > 1) {
 		html += '<span style="margin-right:10px;">';
 		html += 'Show: ';
 		for (var i=0; i<filters.length; i++) {
 			var filter = filters[i];
-			html += this.items.isCurrentFilter(filter) ? '<strong>'+filter+'</strong> ' : '<a href="#" class="filter">'+filter+'</a> ';
+			html += this.list.isCurrentFilter(filter) ? '<strong>'+filter+'</strong> ' : '<a href="#" class="filter">'+filter+'</a> ';
 		}
 		html += '</span>';
 	}
 	$("#filters").html(html);
+	$("#filters").data("pane", this);
 	
-	var pane = this;
 	$('.filter').click(function(event) {
-		// currently only filters the values in the tag cloud
-		pane.items.setFilter($(this).html());
+		// filters values in tag cloud only
+        var pane = $("#filters").data("pane");
+		pane.list.setFilter($(this).html());
 		pane.refresh();
 		return false;
 	});
@@ -379,29 +387,29 @@ DataPane.prototype.resize = function() {
 
 DataPane.prototype.initData = function(taskIdx) {
 	this.taskIdx = taskIdx;
-	this.items = this.createItems();
+	this.list = this.createList();
 }
 
 DataPane.prototype.updateData = function(data, taskIdx) {
-	if (this.items.isItemData(data, taskIdx)) {
-		var items = this.items.addItems(data);
-		for (var i=0; i<items.length; i++) {
-			var item = items[i];
+	if (this.list.isItemData(data, taskIdx)) {
+		var list = this.list.addItems(data);
+		for (var i=0; i<list.length; i++) {
+			var item = list[i];
 			var key = item.getKey();
-			if (isUndefined(this.expandedItems[key])) {
-				this.expandedItems[key] = this.createExpandedItems();
+			if (isUndefined(this.expandedLists[key])) {
+				this.expandedLists[key] = this.createExpandedLists();
 			}
 		}
 	}
 	
-	var items = this.items.createItems(data);
+	var items = this.list.createItems(data);
 	for (var i=0; i<items.length; i++) {
 		var key = items[i].getKey();
-		if (isDefined(this.expandedItems[key])) {
-			for (var j=0; j<this.expandedItems[key].length; j++) {
-				var expandedItems = this.expandedItems[key][j];
-				if (expandedItems.isItemData(data, taskIdx)) {
-					expandedItems.addItems(data);
+		if (isDefined(this.expandedLists[key])) {
+			for (var j=0; j<this.expandedLists[key].length; j++) {
+				var expandedLists = this.expandedLists[key][j];
+				if (expandedLists.isItemData(data, taskIdx)) {
+					expandedLists.addItems(data);
 				}
 			}
 		}
@@ -417,23 +425,27 @@ DataPane.prototype.getKey = function() {
 }
 
 DataPane.prototype.getCount = function() {
-	return this.items ? this.items.getCount() : -1;
+	return this.list ? this.list.getCount() : -1;
+}
+
+function getCurrentPaneKey() {
+    return $("#pane_key").text();
 }
 
 //=================================================================================
 // AccordionList
 //=================================================================================
 
-function AccordionList(div, items, expandedItems) {
+function AccordionList(div, list, expandedLists) {
 	this.div = div;
-	this.items = items;
-	this.expandedItems = isDefined(expandedItems) ? expandedItems : {};
+	this.list = list;
+	this.expandedLists = isDefined(expandedLists) ? expandedLists : {};
 	this.expandedIndex = false;
 	this.expandedKey = null;
 }
 
 AccordionList.prototype.create = function() {	
-	var keys = this.items.getKeys();	
+	var keys = this.list.getKeys();	
 	if (keys.length == 0) {
 		this.div.html('<div style="margin-bottom:15px;">(none)</div>');
 	}
@@ -442,7 +454,7 @@ AccordionList.prototype.create = function() {
 		var html = "";
 		for (var i=0; i<keys.length; i++) {
 			var key = keys[i];
-			html += '<div id="item'+(i+1)+'" class="accordion_section"><a href="#"><span id="itemheader'+(i+1)+'">'+this.items.itemAsHtml(key)+'</span></a></div>';		
+			html += '<div id="item'+(i+1)+'" class="accordion_section"><a href="#"><span id="itemheader'+(i+1)+'">'+this.list.itemAsHtml(key)+'</span></a></div>';		
 			html += '<div id="item'+(i+1)+'_expanded"></div>';
 		}
 		this.div.html(html);
@@ -466,22 +478,22 @@ AccordionList.prototype.create = function() {
 
 AccordionList.prototype.expandedAsHtml = function(key, i) {
 	var html = "";
-	var items = this.expandedItems[key];
-	if (isDefined(items)) {
-		for (var i=0; i<items.length; i++) {
-			var keys = items[i].getKeys();
-			html += "<h5>" + items[i].title + "</h5>";
+	var list = this.expandedLists[key];
+	if (isDefined(list)) {
+		for (var i=0; i<list.length; i++) {
+			var keys = list[i].getKeys();
+			html += "<h5>" + list[i].title + "</h5>";
 			html += '<ol class="expanded_list">';
 			if (keys.length == 0) {
 				html += '<li class="expanded_item">(none)</li>';
 			}
 			else {
-				items[i].sortKeys();
-				var keys = items[i].getKeys();				
+				list[i].sortKeys();
+				var keys = list[i].getKeys();				
 				for (var j=0; j<keys.length; j++) {
 					var itemKey = keys[j];
 					html += '<li class="expanded_item">';
-					html += items[i].itemAsHtml(itemKey);
+					html += list[i].itemAsHtml(itemKey);
 					html += '</li>';
 				}
 			}
@@ -507,9 +519,9 @@ AccordionList.prototype.refresh = function(itemsChanged) {
 
 AccordionList.prototype.refreshItem = function(key) {
 	// refresh header and expanded section (if open) for item
-	var index = this.items.indexOf(key);
+	var index = this.list.indexOf(key);
 	if (index != -1) {
-		$("#itemheader"+(index+1)).html(this.items.itemAsHtml(key));
+		$("#itemheader"+(index+1)).html(this.list.itemAsHtml(key));
 		if (this.expandedIndex == index) {
 			this.refreshExpanded();
 		}
@@ -524,7 +536,7 @@ AccordionList.prototype.refreshExpanded = function() {
 			var div = $("#item"+(this.expandedIndex+1)+"_expanded");
 			var html = this.expandedAsHtml(this.expandedKey, this.expandedIndex);
 			$(div).html(html);
-			this.items.registerItemCallbacks();
+			this.list.registerItemCallbacks();
 		}
 	}
 	else {
@@ -537,7 +549,7 @@ AccordionList.prototype.expandIndex = function(i) {
 }
 
 AccordionList.prototype.expandItem = function(key) {
-	var keys = this.items.getKeys();
+	var keys = this.list.getKeys();
 	for (var i=0; i<keys.length; i++) {
 		if (keys[i] == key) {
 			this.expandedIndex = i;
@@ -551,8 +563,8 @@ AccordionList.prototype.expandItem = function(key) {
 AccordionList.prototype.getExpandedIndex = function() {
 	var selectedIndex = false;
 	if (this.expandedKey!=null) {
-		for (var i=0; i<this.items.keys.length; i++) {
-			if (this.expandedKey == this.items.keys[i]) {
+		for (var i=0; i<this.list.keys.length; i++) {
+			if (this.expandedKey == this.list.keys[i]) {
 				selectedIndex = i;
 				break;
 			}
@@ -562,7 +574,7 @@ AccordionList.prototype.getExpandedIndex = function() {
 }
 
 //=================================================================================
-// Tag Cloud
+// TagCloud
 //=================================================================================
 
 var MAX_TAG_LENGTH = 30;
@@ -571,9 +583,9 @@ var MED_CLOUD_FONT_SIZE = 16;
 var MAX_CLOUD_FONT_SIZE = 26;
 var DEFAULT_TAG_COLOR = "#454C45";
 
-function TagCloud(div, items, options) {
+function TagCloud(div, list, options) {
 	this.div = div;
-	this.items = items;
+	this.list = list;
 	this.options = options;
 	this.accordion = null;
 }
@@ -586,7 +598,7 @@ TagCloud.prototype.create = function() {
 	var html = '';
 	var maxWeight = 1;
 	var tagcloud = this;
-	$.each(this.items.getKeys(), function(i, key) {
+	$.each(this.list.getKeys(), function(i, key) {
 		var itemTag = { tag:tagcloud.getTagText(key), weight:tagcloud.getTagWeight(key) };
 		if (itemTag.weight > 0) {
 			var tag = itemTag.tag.length <= MAX_TAG_LENGTH ? itemTag.tag : itemTag.tag.substring(0, MAX_TAG_LENGTH) + "&hellip;";
@@ -596,8 +608,16 @@ TagCloud.prototype.create = function() {
 		}
 	});
 	
-	if (html != '') {
-		this.div.html('<div class="cloud"><p>'+html+'</p></div>');
+	var tagsToDisplay = html != '';
+	if (!tagsToDisplay) {
+	   html = '<span style="font-size:10pt; color:'+DEFAULT_TAG_COLOR+'">(none)</span>';
+	}
+	
+	if (this.list.getKeys().length > 0) {
+        this.div.html('<div class="cloud"><p>'+html+'</p></div>');
+	}
+	
+	if (tagsToDisplay) {
 		var maxFont = maxWeight <= 2 ? MED_CLOUD_FONT_SIZE : MAX_CLOUD_FONT_SIZE;
 		var colors = this.getColors();
 		$("#"+this.div.attr("id")+" a").tagcloud({
@@ -622,9 +642,6 @@ TagCloud.prototype.create = function() {
 			});
 		}
 	}	
-	else if (this.items.getKeys().length > 0) {
-		html = '<div class="cloud"><p><span style="font-size:10pt; color:'+DEFAULT_TAG_COLOR+'">(none)</span></p></div>';
-	}
 }
 
 TagCloud.prototype.refresh = function(itemsChanged) {
@@ -639,15 +656,15 @@ TagCloud.prototype.getColors = function() {
 }
 
 TagCloud.prototype.getTagText = function(key) {
-	return this.items.getValueForSort(key);
+	return this.list.getValueForSort(key);
 }
 
 TagCloud.prototype.getTagWeight = function(key) {
-	return this.items.getCount(key);
+	return this.list.getCount(key);
 }
 
 //=================================================================================
-// Action Pane
+// ActionPane
 //=================================================================================
 
 function ActionPane(key, title, actionTypes, options) {
@@ -656,12 +673,12 @@ function ActionPane(key, title, actionTypes, options) {
 }
 ActionPane.prototype = Object.create(DataPane.prototype);
 
-ActionPane.prototype.createItems = function() {
+ActionPane.prototype.createList = function() {
 	return new ActionList();
 }
 
 ActionPane.prototype.createTagCloud = function(div) {
-	return new ActionCloud(div, this.items);
+	return new ActionCloud(div, this.list);
 }
 
 ActionPane.prototype.initData = function(taskIdx) {
@@ -673,14 +690,22 @@ ActionPane.prototype.initData = function(taskIdx) {
 	}	
 }
 
-function ActionCloud(div, items, options) {
-	TagCloud.call(this, div, items, options);
+//=================================================================================
+// ActionCloud
+//=================================================================================
+
+function ActionCloud(div, list, options) {
+	TagCloud.call(this, div, list, options);
 }
 ActionCloud.prototype = Object.create(TagCloud.prototype);
 
 ActionCloud.prototype.getTagWeight = function(key) {
-	return this.items.getStudentCount(key);
+	return this.list.getStudentCount(key);
 }
+
+//=================================================================================
+// ActionList
+//=================================================================================
 
 function ActionList(title, keyProperty, actionTypes) {
 	DataList.call(this, title, keyProperty);
@@ -703,9 +728,9 @@ ActionList.prototype.isItemData = function(action, taskIdx) {
 	return isDefined(action) && action.task_idx==taskIdx && $.inArray(action.action_type, this.actionTypes) > -1;
 }
 
-ActionList.prototype.itemAsHtml = function(key, itemText, countText, pane) {
+ActionList.prototype.itemAsHtml = function(key, itemText, countText, paneKey) {
 	var countText = isDefined(countText) ? countText : this.getStudentCount(key);
-	return DataList.prototype.itemAsHtml.call(this, key, itemText, countText, pane);
+	return DataList.prototype.itemAsHtml.call(this, key, itemText, countText, paneKey);
 }
 
 ActionList.prototype.getActions = function(key) {
@@ -736,14 +761,14 @@ ActionList.prototype.getStudentCount = function(key) {
 }
 
 ActionList.prototype.sortKeysByFrequency = function() {	
-	var items = this;
+	var list = this;
 	this.keys.sort(function(a,b) {
-		var aCount = items.getStudentCount(a);
-		var bCount = items.getStudentCount(b);
+		var aCount = list.getStudentCount(a);
+		var bCount = list.getStudentCount(b);
 		var result = (aCount > bCount ? -1 : (aCount < bCount ? 1 : 0));
 		if (result===0) {
-			var aValue = items.getValueForSort(a).toLowerCase();
-			var bValue = items.getValueForSort(b).toLowerCase();
+			var aValue = list.getValueForSort(a).toLowerCase();
+			var bValue = list.getValueForSort(b).toLowerCase();
 			result = (aValue > bValue ? 1 : (aValue < bValue ? -1 : 0));
 		}
 		return result;
