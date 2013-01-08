@@ -1,7 +1,8 @@
 
 // Initialize student data
-var g_students = {};
+var gStudents = {};
 {% for student in students %}
 var student = {{student|safe}};
-g_students[student.nickname] = student;
+gStudents[student.nickname] = student;
 {% endfor %}
+{% if not list %}var gStudent = student;{% endif %}

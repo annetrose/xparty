@@ -5,4 +5,4 @@ var gActivities = [];
 var activity = {{ activity|safe }};
 gActivities.push(activity);
 {% endfor %}
-{% if not list %}gActivity = gActivities[0];{% endif %}
+{% if not list %}var gActivity = gActivities[0];{% endif %}

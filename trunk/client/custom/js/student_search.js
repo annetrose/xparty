@@ -8,8 +8,7 @@
 # License: Apache License 2.0 - http://www.apache.org/licenses/LICENSE-2.0
 */
 
-NO_FRAME_DOMAINS = ["youtube.com", "google.com", "oprah.com", "facebook.com", "urbandictionary.com"];
-
+var gSearchHistory = [];
 var gCurrentSearch = { "query":"", "url":"" };
 var gCustomSearchControl = null;
 
@@ -274,8 +273,6 @@ function onHistoryLinkClicked(event, query) {
 //=================================================================================
 // Search Data
 //=================================================================================
-
-var gSearchHistory = [];
 
 function initCustomData() {
 	for (var taskIdx=0; taskIdx<gActivity.tasks.length; taskIdx++) {
