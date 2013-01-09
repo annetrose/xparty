@@ -20,15 +20,22 @@ class StudentPage(XPartyView):
             if exceptions.NotAnAuthenticatedStudentError.check(self.user):
                 raise exceptions.NotAnAuthenticatedStudentError()
             
-            else:     
-                template_values = {               
-                    'token'         : channel.create_channel(person=self.user, activity_code=self.user.activity.activity_code),
-                    'student'       : helpers.to_json(self.user.to_dict()),
-                    'activity'      : helpers.to_json(self.user.activity.to_dict()),
-                    'activity_type' : self.user.activity.activity_type,
-                    'task_histories': model_access.get_student_actions(self.user.activity, student=self.user, group_by_task=True, as_json=True)
-                }
-                student_template = self.get_custom_template("student", self.user.activity)
+            else:
+                ext = int(self.request.get("ext", 0))
+                if ext == 0:          
+                    template_values = {
+                        'token'              : channel.create_channel(person=self.user, activity_code=self.user.activity.activity_code),
+                        'student'            : helpers.to_json(self.user.to_dict()),
+                        'activity'           : helpers.to_json(self.user.activity.to_dict()),
+                        'activity_type'      : self.user.activity.activity_type,
+                        'task_histories'     : model_access.get_student_actions(self.user.activity, student=self.user, group_by_task=True, as_json=True)
+                    }
+                else:
+                    template_values = {
+                        'token'              : channel.create_channel(person=self.user, activity_code=self.user.activity.activity_code)               
+                    }
+                
+                student_template = self.get_custom_template("student", self.user.activity, ext=ext)
                 self.write_response_with_template(student_template, template_values, custom=True)
 
         except exceptions.NotAnAuthenticatedStudentError:

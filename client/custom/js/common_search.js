@@ -16,6 +16,7 @@ RATED_UNHELPFUL = "rated_unhelpful";
 RESPONSE = "response";
 
 // action colors
+var ACTION_COLORS = {};
 ACTION_COLORS[SEARCH] = "#888888";
 ACTION_COLORS[LINK_FOLLOWED] = "#454C45"; 
 ACTION_COLORS[RATED_HELPFUL] = "#739c95"; 
@@ -29,12 +30,7 @@ UNHELPFUL_RATING = "unhelpful";
 HELPFUL_IMAGE = "/custom/imgs/helpful.png"; 
 UNHELPFUL_IMAGE = "/custom/imgs/unhelpful.png";
 
-// sort options
-SORT_ALPHABETICALLY = "ABC";
-SORT_BY_FREQUENCY = "Frequency";
-SORT_BY_LOGIN_STATUS = "Login Status";
-
-// domains that can not displayed in an iframe
+// domains that can not be displayed in an iframe
 NO_FRAME_DOMAINS = [ "youtube.com", "google.com", "oprah.com", "facebook.com", "urbandictionary.com" ];
 
 function getRatingImage(rating) {

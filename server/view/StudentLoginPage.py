@@ -12,7 +12,10 @@ from server.lib import gaesessions
 class StudentLoginPage(XPartyView):
     def get(self):
         self.init_user_context("student")
-        self.write_response_with_template("student_login.html")
+        template_values = {
+            "ext" : int(self.request.get("ext", 0))
+        }
+        self.write_response_with_template("student_login.html", template_values)
         
         session = gaesessions.get_current_session()
         session.terminate()

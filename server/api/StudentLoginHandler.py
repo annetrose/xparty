@@ -20,7 +20,8 @@ class StudentLoginHandler(XPartyHandler):
             student_nickname = " ".join(student_nickname.split())
             anonymous = True if not student_nickname else False
             activity_code = self.request.get("activity_code")
-                                
+            ext = int(self.request.get("ext", 0))
+                 
             # Retrieve activity from datastore
             # - If activity does not exist, this will return None.
             # - If activity existed but is disabled, it will return the activity, but activity.is_active will be False.
@@ -86,7 +87,7 @@ class StudentLoginHandler(XPartyHandler):
         
                     self.user = student
                 
-                    response_data = { "status": 1, "nickname":model_access.get_person_nickname(self.user) }            
+                    response_data = { "status": 1, "nickname": model_access.get_person_nickname(self.user), "ext": ext }            
                     self.write_response_as_json(response_data)
 
         except exceptions.XPartyException as e:

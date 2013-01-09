@@ -98,18 +98,22 @@ var gTaskHistories = [];
 
 // gDataPanes: array of DataPane objects displayed in the teacher view for the loaded activity type
 // DataPane defined in client/js/data_pane.js
-//
 var gDataPanes = [];
 
 // key for data pane currently being viewed in teacher view
-//
 var gCurrentPaneKey = null;
 
-// data pane keys for default panes; pane keys should not contain spaces or special characters
-//
+// data pane keys (should not contain spaces or special characters)
 var STUDENT_PANE = "students";
 var HISTORY_PANE = "history";
 
+// sort options
+var SORT_ALPHABETICALLY = "ABC";
+var SORT_BY_FREQUENCY = "Frequency";
+var SORT_BY_LOGIN_STATUS = "Login Status";
+
+// visual actions
+var ACTION_COLORS = { "default": "#888888" };
 var ACTION_DIM = 6;
 
 //=================================================================================
@@ -561,7 +565,7 @@ StudentList.prototype.itemAsHtml = function(key, itemText, countText, paneKey) {
 	var paneKey = isDefined(paneKey) ? paneKey : (isDefined(this.defaultPaneKey) && gCurrentPaneKey != this.defaultPaneKey ? this.defaultPaneKey : undefined);
 	if (isUndefined(paneKey)) {
 		var isLoggedIn = this.getValue(key, "is_logged_in");
-		var className = is_logged_in===false ? "studentLoggedOut" : "studentLoggedIn";
+		var className = isLoggedIn===false ? "studentLoggedOut" : "studentLoggedIn";
 		var html = '<span class="' + className + '">' + key + '</span>';
 		html += '<span class="item_key">' + key + '</span>';
 		if (isLoggedIn) {
@@ -696,6 +700,11 @@ function actionAsHtmlRow(action, includeStudent) {
 	html += '<td style="width:15ex">' + actionTime + '</td>';
 	html += '</tr>';
 	return html;
+}
+
+function getActionColor(action) {
+    var type = action.action_type;
+    return isDefined(ACTION_COLORS[type]) ? ACTION_COLORS[type] : ACTION_COLORS["default"];
 }
 
 //=================================================================================

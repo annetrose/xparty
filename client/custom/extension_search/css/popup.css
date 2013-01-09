@@ -1,0 +1,22 @@
+body {
+	width:450px;
+	font: 10pt Arial;
+}
+
+h1 {
+	font: bold 12pt Arial;
+	margin-top: 10px;
+	margin-bottom: 10px;
+}
+
+h2 {
+	font: bold 11pt Arial;
+	margin-top: 8px;
+	margin-bottom: 8px;
+}
+
+.note {
+	font-size: 8pt;
+	font-weight: normal;
+	font-style: italic;
+}

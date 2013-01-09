@@ -1,0 +1,6 @@
+Todo List
+
+* Change SP to XP in logos
+* Add copyright headers
+* Redirect to google.com when logging in
+* Replace sendMessage with postMessage
