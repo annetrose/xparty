@@ -346,7 +346,7 @@ function addSearch(taskIdx, query, notifyTeacher) {
 	// notify teacher whenever a search is performed (even if the same search has been performed before)
 	var notifyTeacher = isDefined(notifyTeacher) ? notifyTeacher : false;
 	if (notifyTeacher) {
-		onStudentAction("search", query, { "query":query });
+		onStudentAction(SEARCH, query, { "query":query, "url":null });
 	}
 }
 

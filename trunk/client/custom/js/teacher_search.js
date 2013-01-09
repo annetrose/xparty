@@ -295,9 +295,13 @@ WordPane.prototype.updateData = function(data, taskIdx) {
 	var list = this.list.createItems(data);
 	for (var i=0; i<list.length; i++) {
 		var key = list[i].getKey();
-		var queryList = this.expandedLists[key][1];
-		if (queryList.isItemData(data, taskIdx)) {
-			queryList.updateRatings(data, taskIdx);
+		// check if expandedLists is defined for key
+        // if not, means data has property with same name as list.keyProperty
+        if (isDefined(this.expandedLists[key])) {
+    		var queryList = this.expandedLists[key][1];
+    		if (queryList.isItemData(data, taskIdx)) {
+    			queryList.updateRatings(data, taskIdx);
+    		}
 		}
 	}
 }
@@ -364,10 +368,14 @@ LinkPane.prototype.updateData = function(data, taskIdx) {
 	ActionPane.prototype.updateData.call(this, data, taskIdx);
 	var list = this.list.createItems(data);
 	if (list.length > 0) {
-		var key = list[0].getKey();
-		var queryList = this.expandedLists[key][1];
-		if (queryList.isItemData(data, taskIdx)) {
-			queryList.updateRatings(data, taskIdx);
+        var key = list[0].getKey();
+        // check if expandedLists is defined for key
+        // if not, means data has property with same name as list.keyProperty
+		if (isDefined(this.expandedLists[key])) {
+    		var queryList = this.expandedLists[key][1];
+    		if (queryList.isItemData(data, taskIdx)) {
+    			queryList.updateRatings(data, taskIdx);
+    		}
 		}
 	}
 }

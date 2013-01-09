@@ -405,7 +405,9 @@ DataPane.prototype.updateData = function(data, taskIdx) {
 	var items = this.list.createItems(data);
 	for (var i=0; i<items.length; i++) {
 		var key = items[i].getKey();
-		if (isDefined(this.expandedLists[key])) {
+		// check if expandedLists is defined for key
+        // if not, means data has property with same name as list.keyProperty
+        if (isDefined(this.expandedLists[key])) {
 			for (var j=0; j<this.expandedLists[key].length; j++) {
 				var expandedLists = this.expandedLists[key][j];
 				if (expandedLists.isItemData(data, taskIdx)) {

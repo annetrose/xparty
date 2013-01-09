@@ -20,11 +20,18 @@ class StudentInfoHandler(XPartyHandler):
                     
             else:
                 task_idx = int(self.request.get("task_idx", 0))
+                include_history = int(self.request.get("include_history", 1)) == 1
+                actions_as_dict = []
+                if include_history:
+                    actions = model_access.get_student_actions(self.user.activity, task_idx=task_idx, student=self.user)
+                    for action in actions:
+                        actions_as_dict.append(action.to_dict())
+                
                 response_data = { 
                     "status":           1, 
                     "student":          self.user.to_dict(), 
                     "activity":         self.user.activity.to_dict(),
-                    "task_history":     model_access.get_student_actions(self.user.activity, task_idx=task_idx, student=self.user)
+                    "task_history":     actions_as_dict
                 }            
                 self.write_response_as_json(response_data)
             

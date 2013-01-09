@@ -25,6 +25,13 @@ indexes:
   properties:
   - name: activity
   - name: student
+  - name: task_idx
+  - name: timestamp
+
+- kind: StudentAction
+  properties:
+  - name: activity
+  - name: student
   - name: timestamp
 
 - kind: StudentAction
