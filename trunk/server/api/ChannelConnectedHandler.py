@@ -15,3 +15,5 @@ class ChannelConnectedHandler(webapp2.RequestHandler):
         # is not complete if student nickname contains special characters such as ", ', #
         client_id = self.request.get('from', None)
         model_access.add_client_id_to_person(client_id)
+        from server.utils import helpers
+        helpers.log("*** CLIENT ID ADDED TO PERSON ***");

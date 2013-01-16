@@ -154,6 +154,17 @@ def get_students(activity=None, only_logged_in=False, as_json=False):
                
     return student_list
 
+def student_data_to_dict(student, task_idx=0, include_history=True):
+    task_history = []
+    if include_history:
+        actions = get_student_actions(student.activity, task_idx=task_idx, student=student)
+        for action in actions:
+            task_history.append(action.to_dict())
+                
+    student_data = student.to_dict();
+    student_data['task_history'] = task_history;
+    return student_data
+                
 def create_student(data): 
     now = datetime.datetime.now()
     student = Student(
