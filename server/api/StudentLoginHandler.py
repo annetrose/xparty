@@ -7,6 +7,7 @@
 # License: Apache License 2.0 - http://www.apache.org/licenses/LICENSE-2.0
 
 from XPartyHandler import XPartyHandler
+from server import channel
 from server import exceptions
 from server import model_access
 from server.lib import gaesessions
@@ -79,15 +80,23 @@ class StudentLoginHandler(XPartyHandler):
                     # Create new student
                     else: 
                         student = model_access.create_student({
-                            'student_nickname': student_nickname,
-                            'anonymous':        anonymous,
-                            'activity':         activity,
-                            'session_sid':      session.sid
+                            "student_nickname": student_nickname,
+                            "anonymous":        anonymous,
+                            "activity":         activity,
+                            "session_sid":      session.sid
                         })
         
                     self.user = student
-                
-                    response_data = { "status": 1, "nickname": model_access.get_person_nickname(self.user), "ext": ext }            
+                                    
+                    response_data = { "status": 1 }
+                        
+                    # for external applications
+                    # notify teacher about login since /student not loaded
+                    if ext == 1:
+                        response_data["student"] = model_access.student_data_to_dict(self.user)
+                        response_data["activity"] = self.user.activity.to_dict()
+                        channel.send_student_log_in(student=student)
+                        
                     self.write_response_as_json(response_data)
 
         except exceptions.XPartyException as e:

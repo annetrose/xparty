@@ -3,20 +3,32 @@ body {
 	font: 10pt Arial;
 }
 
-h1 {
-	font: bold 12pt Arial;
-	margin-top: 10px;
-	margin-bottom: 10px;
+#header {
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
-h2 {
-	font: bold 11pt Arial;
-	margin-top: 8px;
-	margin-bottom: 8px;
+#title {
+	font: bold 12pt Arial;
+	float: left;
+	width: 250px;
+}
+
+#user_info {
+    font: normal 10pt Arial;
+    float: right;
 }
 
 .note {
 	font-size: 8pt;
 	font-weight: normal;
 	font-style: italic;
+}
+
+.smallspacebelow {
+    margin-bottom: 5px;
+}
+
+.warning {
+    color: red;
 }

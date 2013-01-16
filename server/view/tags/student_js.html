@@ -2,7 +2,7 @@
 // Initialize student data
 var gStudents = {};
 {% for student in students %}
-var student = {{student|safe}};
+var student = {{ student|safe }};
 gStudents[student.nickname] = student;
 {% endfor %}
 {% if not list %}var gStudent = student;{% endif %}

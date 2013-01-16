@@ -22,17 +22,14 @@
         $.post("/student_login_handler", 
             {
                 "student_nickname": $("#student_nickname_input").val(),
-                "activity_code": $("#activity_code_input").val(),
-                "ext": {{ ext }}
+                "activity_code": $("#activity_code_input").val()
             }, 
             login_callback, 'json');
     }
 
     function login_callback(data) {
         if (data['status'] == 1) {
-            var redirect = "/student";
-            if (data['ext'] == 1) redirect += "?ext=1";
-            window.location.replace(redirect);
+            window.location.replace("/student");
         }
         else {
             $('#msg').html(data['msg']);
