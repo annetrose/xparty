@@ -79,17 +79,17 @@ DataList.prototype.itemAsHtml = function(key, itemText, countText, paneKey) {
     var currentPaneKey = getCurrentPaneKey();
 	var paneKey = isDefined(paneKey) ? paneKey : (isDefined(this.defaultPaneKey) && currentPaneKey != this.defaultPaneKey ? this.defaultPaneKey : undefined);	
 	var html = isDefined(paneKey) ? '<a href="#" class="item_link">' : "";
-	html += itemText;
-	html += '<span class="item_key">' + key + '</span>';
-	html += isDefined(paneKey) ? '<span class="item_pane">'+paneKey+'</span></a>' : "";
+	html += htmlEscape(itemText);
+	html += '<span class="item_key">' + htmlEscape(key) + '</span>';
+	html += isDefined(paneKey) ? '<span class="item_pane">' + htmlEscape(paneKey) + '</span></a>' : "";
 	html += isDefined(countText) && countText != "" ? ' (' + countText + ')' : "";
 	return html;
 }
 
 DataList.prototype.registerItemCallbacks = function() {
 	$(".item_link").click(function() {
-		var key = $(".item_key", this).html();
-		var pane = $(".item_pane", this).html();
+		var key = $(".item_key", this).text();
+		var pane = $(".item_pane", this).text();
 		if (isDefined(pane) && isDefined(key)) {
 			showPane(pane, key);
 		}
@@ -533,7 +533,7 @@ AccordionList.prototype.refreshItem = function(key) {
 AccordionList.prototype.refreshExpanded = function() {
 	if (this.expandedIndex !== false) {
 		var selectedItem = $(".accordion_section:eq("+this.expandedIndex+")");
-		this.expandedKey = $(".item_key", selectedItem).html();
+		this.expandedKey = $(".item_key", selectedItem).text();
 		if (this.expandedKey) {
 			var div = $("#item"+(this.expandedIndex+1)+"_expanded");
 			var html = this.expandedAsHtml(this.expandedKey, this.expandedIndex);

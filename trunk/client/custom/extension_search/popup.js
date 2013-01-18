@@ -43,7 +43,13 @@ function initLoginForm() {
 
     $("#user_info").html("");
     $("#content").html(html);
+    
     $("#login_button").click(onLoginClicked);
+    $("#activity_code_input").keyup(function(event) {
+        if (event.which == 13) {  // enter key
+            onLoginClicked();
+        }    
+    });
 }
 
 function initActivitySummary() {

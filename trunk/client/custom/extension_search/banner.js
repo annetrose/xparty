@@ -19,28 +19,52 @@ checkLoginStatus();
 
 function checkLoginStatus() {
     chrome.extension.sendMessage({ "type": STUDENT_DATA_REQUEST }, function(response) {
-    // check login status by request student data from background
+    // check login status by requesting student data from background
 
         storeStudent(response.student, false);
         storeActivity(response.activity);
+        storeResponse(response.response);
     
+        // on XParty Search web interface
         if (gUrl == XPARTY_SEARCH_URL) {
+            // student already logged in so redirect to Google
             if (isStudentLoggedIn()) {
                 window.location = GOOGLE_SEARCH_URL;
             }
+            // student not logged in yet so notify extension that user has logged in via web interface
             else {
                 chrome.extension.sendMessage({ "type": LOGIN_VIA_WEB });
             }
         }
-        else if (isStudentLoggedIn()) {
+
+        // add banner to page and 
+        // check for any actions to perform as result of navigating to this page
+        else if (isStudentLoggedIn() && isBannerPage(gUrl)) {
             createBanner(response.task_idx);
+            checkForPageVisitedActions();
         }
     });
+}
+
+function checkForPageVisitedActions() {
+    if (isSearchPage(gUrl)) {
+        var query = getSearchQuery(gUrl);
+        if (query) {
+            showLoading("Saving search ...");                    
+            chrome.extension.sendMessage({ "type": SEARCH_PERFORMED, "query": query, "url": gUrl });
+        }
+    }
+    else if (isLinkPage(gUrl)) {
+        showLoading("Saving link followed ...");
+        var title = $("title").text();
+        chrome.extension.sendMessage({ "type": LINK_FOLLOWED, "url": gUrl, "title": title, "referrer": document.referrer });
+    }
 }
 
 function listenForMessages() {
     if (isBannerPage(gUrl)) {    
         chrome.extension.onMessage.addListener(function(message, sender, sendResponse) {    
+            debug(message.type);
             if (message.type == LOGIN) {
                 handleLogin(message);
             }
@@ -49,6 +73,25 @@ function listenForMessages() {
             }
             else if (message.type == TASK_CHANGED) {
                 handleTaskChanged(message);
+            }
+            else if (message.type == SEARCH_SAVED) {
+                showMessage("Saved search (" + htmlEscape(message.query) + ")");
+            }
+            else if (message.type == LINK_SAVED) {
+                var link = message.title ? message.title : message.url;
+                showMessage("Link saved (" + link + ")");
+            }
+            else if (message.type == RATING_SAVED) {
+                showMessage("Rating saved");
+            }
+            else if (message.type == RESPONSE_CHANGED) {
+                setResponse(message.response);
+            }
+            else if (message.type == RESPONSE_SAVED) {
+                showMessage("Response saved");
+            }
+            else if (message.type == ERROR) {
+                showMessage("An error occurred. Please try again later.");
             }
         });
     }
@@ -66,10 +109,14 @@ function handleLogout(message) {
 }
 
 function handleTaskChanged(message) {
-    var taskChooser = getTaskChooser();
-    taskChooser.unbind("change", onTaskChanged);
-    taskChooser.val(message.task_idx);
-    taskChooser.change(onTaskChanged);
+    removeTaskListeners();
+    storeTaskIdx(message.task_idx);
+    initTaskListeners();
+    
+    // TODO: update rating and response from stored values on server
+    setRating();
+    setResponse("");
+    showMessage("");  
 }
 
 //=====================================================================
@@ -122,9 +169,16 @@ function createBanner(taskIdx) {
     // is disconnected so it should be re-created whenever banner is created 
     // gPort = chrome.extension.connect();
     
-    var taskChooser = getTaskChooser();
-    taskChooser.val(taskIdx);
-    taskChooser.change(onTaskChanged); 
+    setTaskIdx(taskIdx);
+    initTaskListeners();
+    
+    // TODO: Need to load existing link ratings from server and store in extension background process
+    setRating();
+    initRatingListeners();
+    
+    // TODO: Need to load existing response from server
+    setResponse(getStoredResponse());
+    initResponseListeners();
 }
 
 function hideBanner() {
@@ -134,18 +188,21 @@ function hideBanner() {
 }
 
 function getBannerHtml() {
-    var html = '';
-    html += '<div style="float:left; width: 200px">';
+    var html = '<link rel="stylesheet" type="text/css" href="' + chrome.extension.getURL("css/banner.css") + '" />';
+    html += '<div id="col1">';
     html += '<img src="'+XPARTY_URL+'/imgs/xp_logo.png" alt="XParty Logo" />';
     html += '</div>';
-    html += '<div style="float:left">';
-    html += '<strong>' + gActivity.class_name + '</strong> (#'+gActivity.activity_code+')<br/>';
-    html += "Student: " + getStudentNickname() + '<br/>';
-    html += '<select id="task_chooser">';    
-    for (var i=0; i<gActivity.tasks.length; i++) {
-        html += '<option value="'+i+'">'+(i+1)+'. '+gActivity.tasks[i][0]+'</option>';
+    html += '<div id="col2">';
+    html += '<div class="smallspaceafter">';
+    html += '<strong>' + gActivity.class_name + '</strong> <span class="note">#'+gActivity.activity_code+'</span><br/>';
+    html += 'Student: ' + getStudentNickname();
+    html += '</div>';
+    html += 'Task: ' + getTaskChooserHtml();
+    if (isLinkPage(gUrl)) {
+        html += '<br/>Rate this page: ' + getRatingBoxesHtml();
     }
-    html += '</select>';
+    html += '<br/>Response: '+ getResponseHtml();
+    html += '<div id="msg"></div>';
     html += '</div>';
     html += '<div style="clear:both"></div>';
     return html;
@@ -169,18 +226,140 @@ function getHtmlTag() {
     return html;
 }
 
+function getBannerElement(selector) {
+    return $('#'+gBannerId).contents().find(selector);
+}
+
+function showMessage(msg) {
+    getBannerElement("#msg").html("<em>"+msg+"</em>");
+}
+
+function showLoading(msg) {
+    showMessage('<img src="' + XPARTY_URL + '/imgs/loading.gif"> ' + msg);
+}
+
 //=====================================================================
 // Task Chooser
 //=====================================================================
 
+function getTaskChooserHtml() {
+    var html = '<select id="task_chooser">';    
+    for (var i=0; i<gActivity.tasks.length; i++) {
+        html += '<option value="'+i+'">'+(i+1)+'. '+gActivity.tasks[i][0]+'</option>';
+    }
+    html += '</select>';
+    return html;
+}
+
 function getTaskChooser() {
-    return $('#'+gBannerId).contents().find('#task_chooser');
+    return getBannerElement("#task_chooser");
 }
             
 function getSelectedTaskIndex() {
     return getTaskChooser().prop('selectedIndex');
 }
 
+function setTaskIdx(taskIdx) {
+    getTaskChooser().val(taskIdx);
+}
+
+function initTaskListeners() {
+    getTaskChooser().change(onTaskChanged);
+}
+
+function removeTaskListeners() {
+    getTaskChooser().unbind("change", onTaskChanged);
+}
+
 function onTaskChanged() {
     chrome.extension.sendMessage({ type: TASK_CHANGED, task_idx: getSelectedTaskIndex() });
+}
+
+//=====================================================================
+// Rating Boxes
+//=====================================================================
+
+function getRatingBoxesHtml() {
+    var html = '<input type="radio" name="rating" id="helpful" value="' + HELPFUL_RATING + '">Helpful&nbsp;&nbsp;</input>';
+    html += '<input type="radio" name="rating" id="unhelpful" value="' + UNHELPFUL_RATING + '">Unhelpful</input>';
+    return html;
+}
+
+function getRatingBoxes() {
+    return getBannerElement("input[name=rating]");
+}
+
+function getSelectedRating() {
+    var checkedRating = getBannerElement("input[name=rating]:checked");
+    return checkedRating.val();
+}
+
+function setRating(rating) {
+    if (isUndefined(rating)) {
+        $("#helpful").attr("checked", "");
+        $("#unhelpful").attr("checked", "");
+    }
+    else if (rating == HELPFUL) {
+        $("#helpful").attr("checked", "checked");
+    }
+    else if (rating == UNHELPFUL) {
+        $("#unhelpful").attr("checked", "checked");
+    }
+}
+
+function initRatingListeners() {
+    getRatingBoxes().change(onRatingChanged);
+}
+
+function removeRatingListeners() {
+    getRatingBoxes().unbind("change", onRatingChanged);
+}
+
+function onRatingChanged() {
+    var rating = getSelectedRating();
+    var type = rating == HELPFUL_RATING ? RATED_HELPFUL : RATED_UNHELPFUL;
+    chrome.extension.sendMessage({ "type" : type, "rating" : getSelectedRating() });
+}
+
+//=====================================================================
+// Response Textbox
+//=====================================================================
+
+function getResponseHtml() {
+    var html = '<input type="text" name="response" id="response" value="" style="width:200px" />';
+    html += '<input type="button" name="response_button" id="response_button" value="Save" />';
+    return html;
+}
+
+function getResponseTextbox() {
+    return getBannerElement("input[name=response]");
+}
+
+function getResponse() {
+    return getResponseTextbox().val();
+}
+
+function setResponse(response) {
+    getResponseTextbox().val(response);
+}
+
+function initResponseListeners() {
+    getBannerElement("input[name=response_button]").click(onResponseSaved);
+    getResponseTextbox().keyup(function(event) {
+        if (event.which == 13) {  // enter key
+            onResponseSaved();
+        }    
+    });
+}
+
+function onResponseSaved() {
+    var response = getResponse();
+    if (response == "") {
+        showMessage("Please enter a response before saving");
+    }
+    else {
+        showLoading("Saving search ... ");
+        storeResponse(response);
+        chrome.extension.sendMessage({ "type" : RESPONSE_SUBMITTED, "response" : getResponse() });
+    }
 }

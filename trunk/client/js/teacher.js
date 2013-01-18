@@ -536,8 +536,8 @@ StudentList.prototype.itemAsHtml = function(key, itemText, countText, paneKey) {
 	if (isUndefined(paneKey)) {
 		var isLoggedIn = this.getValue(key, "is_logged_in");
 		var className = isLoggedIn===false ? "studentLoggedOut" : "studentLoggedIn";
-		var html = '<span class="' + className + '">' + key + '</span>';
-		html += '<span class="item_key">' + key + '</span>';
+		var html = '<span class="' + className + '">' + htmlEscape(key) + '</span>';
+		html += '<span class="item_key">' + htmlEscape(key) + '</span>';
 		if (isLoggedIn) {
 				html += ' <button class="logout_btn" value="'+ key +'" title="Logout student">X</button>';
 		}
