@@ -2,3 +2,17 @@ Todo List
 
 * Change SP to XP in logos
 * Understand when to use port messages vs. simple messages
+* Show existing link rating (if any)
+* Add tag cloud for class
+* Maintain local copy of student's task history
+* ?? Update banner info in tab on activate vs. notifying all tabs when something has changed
+     
+ Bugs
+
+* Direct links that redirect to another page will not be recorded as direct links
+* Handle searches that also generate a link followed automatically
+* Some followed links may result in multiple urls getting recorded. Redirects?
+* Link saved but banner.js does not receive saved message sometimes
+    Doesn't happen often - maybe when extension is re-loaded and old banner.js is loaded in existing tabs?
+    Could tabId change as a result of some page visits?
+    Remove "saving/loading" messages from banner if no response received?

@@ -11,7 +11,7 @@
 // BEHAVIOR: a query is found to be helpful if at least one link followed is rated helpful
 // BEHAVIOR: counts displayed represent number of students who did something (e.g., 3 students found query cat to be helpful)
 // BEHAVIOR: keys used by QueryPane and WordPane are case insensitive (e.g., dog and Dog are grouped together)
-// BEHAVIOR: all responses made by user for given task are shown in ResponsePane or should only most recent be shown?
+// TODO/BEHAVIOR: all responses made by user for given task are shown in ResponsePane or should only most recent be shown?
 
 // data panes
 var QUERY_PANE = "query";
@@ -103,6 +103,10 @@ function QueryCloud(div, items, options) {
 	TagCloud.call(this, div, items, options);
 }
 QueryCloud.prototype = Object.create(TagCloud.prototype);
+
+QueryCloud.prototype.getTagText = function(key) {
+    return isDefined(this.list.keyVersions[key]) ? this.list.keyVersions[key][0] : key;
+}
 
 QueryCloud.prototype.getTagWeight = function(key) {
 	var weight = 0;
@@ -317,20 +321,23 @@ WordList.prototype.createItems = function(action) {
 	var wordItems = [];
 	var queryItems = QueryList.prototype.createItems.call(this, action);
 	if (queryItems.length > 0) {
-		var query = queryItems[0].getKey();	
-		var words = query.split(" ");
-		for (var i=0; i<words.length; i++) {
-			var wordVersion = words[i];
-			var wordKey = words[i].toLowerCase();
-			if (!isStopWord(wordKey)) {
-				wordItems.push(new DataItem(wordKey, action));
-				if (isUndefined(this.keyVersions[wordKey])) {
-					this.keyVersions[wordKey] = [];
-				}
-				if ($.inArray(wordVersion, this.keyVersions[wordKey]) == -1) {
-					this.keyVersions[wordKey].push(wordVersion);
-				}
-			}
+		var query = queryItems[0].getKey();
+		var queryVersions = this.keyVersions[query];
+		for (var i=0; i<queryVersions.length; i++) {
+		    var words = queryVersions[i].split(" ");
+		    for (var j=0; j<words.length; j++) {
+			    var wordVersion = words[j];
+			    var wordKey = words[j].toLowerCase();
+			    if (!isStopWord(wordKey)) {
+				    wordItems.push(new DataItem(wordKey, action));
+				    if (isUndefined(this.keyVersions[wordKey])) {
+					    this.keyVersions[wordKey] = [];
+				    }
+				    if ($.inArray(wordVersion, this.keyVersions[wordKey]) == -1) {
+					    this.keyVersions[wordKey].push(wordVersion);
+				    }
+			    }
+		    }
 		}
 	}
 	return wordItems;
@@ -452,7 +459,8 @@ LinkList.prototype.addItems = function(action) {
 
 LinkList.prototype.itemAsHtml = function(key, itemText, countText, paneKey) {
 	var action = this.getAction(key);
-	var itemText = isDefined(itemText) ? itemText : action.action_data.title.clip(50);
+	var defaultItemText = action.action_data.title != "" ? action.action_data.title.clip(50) : action.action_data.url.clip(50);
+	var itemText = isDefined(itemText) && itemText != "" ? itemText : defaultItemText;
 	var countText = isDefined(countText) ? countText : this.ratingsAsHtml(key);
 	return ActionList.prototype.itemAsHtml.call(this, key, itemText, countText, paneKey);
 }
@@ -488,7 +496,7 @@ LinkList.prototype.getRatingCounts = function(key) {
 
 LinkList.prototype.getValueForSort = function(key) {
 	var action = this.getAction(key);
-	return action.action_data.title;
+	return action.action_data.title ? action.action_data.title : action.action_data.url;
 }
 
 LinkList.prototype.filterToRating = function(filter) {
