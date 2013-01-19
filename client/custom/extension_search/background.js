@@ -16,8 +16,12 @@ $(document).ready(function() {
 chrome.extension.onMessage.addListener(function(message, sender, sendResponse) {
 // listen for messages sent from popup or content scripts
 
-    var tabId = sender.tab.id;
-    debug(message.type);
+    var tab = sender.tab;
+    debug(message.type+': tab='+tab.id);
+        
+    // TODO: check if tab opened by existing tab
+    // if so update stored tab info
+    // what are other cases where tab info needs to be updated?
     
     // get data for logged in student, if any
     if (message.type == STUDENT_DATA_REQUEST) {
@@ -32,7 +36,7 @@ chrome.extension.onMessage.addListener(function(message, sender, sendResponse) {
     
     // student logged in via extension or web interface
     else if (message.type == LOGIN || message.type == LOGIN_VIA_WEB) {
-        handleLogin(tabId, message);
+        handleLogin(tab, message);
     }
      
     // student logged out
@@ -42,34 +46,34 @@ chrome.extension.onMessage.addListener(function(message, sender, sendResponse) {
     
     // student changed tasks
     else if (message.type == TASK_CHANGED) {
-        handleTaskChanged(tabId, message);
+        handleTaskChanged(tab, message);
     }
     
     // student performed search
     else if (message.type == SEARCH_PERFORMED) {
-        handleSearch(tabId, message);    
+        handleSearch(tab, message);    
     }
     
     // student followed link
     else if (message.type == LINK_FOLLOWED) {
-        handleLinkFollowed(tabId, message);
+        handleLinkFollowed(tab, message);
     }
     
     // student rated link
     else if (message.type == RATED_HELPFUL || message.type == RATED_UNHELPFUL) {
-        handleLinkRated(tabId, message);
+        handleLinkRated(tab, message);
     }
     
     // student submitted response
     else if (message.type == RESPONSE_SUBMITTED) {
-        handleResponse(tabId, message);
+        handleResponse(tab, message);
     }
     
 });
 
 chrome.tabs.onUpdated.addListener(function(tabId, info, tab) {
 // listen for any updated tabs
-        
+    
     // check for pending logins
     if (info.status == "complete" && isStudentLoggedIn() && gPendingLoginTabId != -1) {
         // notify other tabs of login
@@ -106,10 +110,11 @@ function initTabs() {
     });
 }
 
-function handleLogin(tabId, message) {
+function handleLogin(tab, message) {
 // if logged in via extension, store student data and create new tab for Google search
 // if logged in via web, load student data and update web login to show Google search
 
+    var tabId = tab.id;
     var searchTab = { "url" : GOOGLE_SEARCH_URL, "active" : true };
     
     // ISSUE: initTabs may not complete before processing continues
@@ -149,9 +154,10 @@ function handleLogout() {
     });
 }
 
-function handleTaskChanged(taskId, data) {
+function handleTaskChanged(tab, data) {
 // store new task and notify other tabs of change
 
+    var tabId = tab.id;
     storeTaskIdx(data.task_idx);
     chrome.tabs.query({}, function(tabs) {
         for (i in tabs) {
@@ -163,10 +169,11 @@ function handleTaskChanged(taskId, data) {
     });
 }
 
-function handleSearch(tabId, action) {
+function handleSearch(tab, action) {
 // store new search for tab and save on server
 
-    // if new query for tab, save query to server and notify tab 
+    // if new query for tab, save query to server and notify tab
+    var tabId = tab.id;
     if (getStoredTabQuery(tabId) != action.query) {
         saveSearch(tabId, action.query, action.url, 
             function(tabId, data) {
@@ -199,6 +206,7 @@ function saveSearch(tabId, query, url, onSuccess) {
         success: function(data) {
             if (data.status == 1) {
                 storeTabQuery(tabId, data.action.action_data.query);
+                debug("storeTabQuery: "+tabId+','+data.action.action_data.query);
                 if (isFunction(onSuccess)) {
                     onSuccess(tabId, data);
                 }
@@ -213,9 +221,11 @@ function saveSearch(tabId, query, url, onSuccess) {
     });
 }
 
-function handleLinkFollowed(tabId, action) {
+function handleLinkFollowed(tab, action) {
 // store link followed for tab and save in server
 
+    var tabId = tab.id;
+            
     // if new link for tab, save link to server and notify tab 
     if (getStoredTabUrl(tabId) != action.url) {
     
@@ -287,19 +297,19 @@ function saveLinkFollowed(tabId, url, title, onSuccess) {
 }
 
 function onLinkSaved(tabId, data) {
-    var query = data.action.action_data.query;
     var url = data.action.action_data.url;
     var title = data.action.action_data.title;
-    chrome.tabs.sendMessage(tabId, { "type" : LINK_SAVED, "query" : query, "url" : url, "title" : title });
+    chrome.tabs.sendMessage(tabId, { "type" : LINK_SAVED, "url" : url, "title" : title });
 }
 
-function handleLinkRated(tabId, action) {
+function handleLinkRated(tab, action) {
 // save link rating to server
 // TODO: notify other tabs of rating in case url is viewed in other tabs
-        
+    
+    var tabId = tab.id;
     var tabQuery = getStoredTabQuery(tabId);
     var tabUrl = getStoredTabUrl(tabId); 
-    var tabTitle = getTabStoredTitle(tabId);
+    var tabTitle = getStoredTabTitle(tabId);
         
     $.ajax({
         type: 'POST',
@@ -320,10 +330,10 @@ function handleLinkRated(tabId, action) {
     });
 }
 
-function handleResponse(tabId, action) {
+function handleResponse(tab, action) {
 // save response to server
-// TODO: notify other tabs of response
     
+    var tab = tab.id;
     $.ajax({
         type: 'POST',
         url: XPARTY_URL + "/student_action", 

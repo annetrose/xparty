@@ -9,6 +9,11 @@ Todo List
      
  Bugs
 
+* In query/word panes in teacher view, Anne/anne both show up sometimes until refreshed
+* Chrome appears to pre-load some pages which causes fake followed link to occur.
+  An even bigger issue is that the tab id seems to change when the pre-loaded link is actually followed
+  which breaks the extension; use document.webkitHidden to detect if page is visible?
+* Some visited links change tab id - need to detect and update tab id in stored data
 * Direct links that redirect to another page will not be recorded as direct links
 * Handle searches that also generate a link followed automatically
 * Some followed links may result in multiple urls getting recorded. Redirects?
