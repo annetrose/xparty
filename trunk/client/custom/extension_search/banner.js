@@ -368,8 +368,8 @@ function onResponseSaved() {
         showMessage("Please enter a response before saving");
     }
     else {
-        showLoading("Saving search ... ");
+        showLoading("Saving response ... ");
         storeResponse(response);
-        chrome.extension.sendMessage({ "type" : RESPONSE_SUBMITTED, "response" : getResponse() });
+        chrome.extension.sendMessage({ "type" : RESPONSE_SUBMITTED, "response" : response });
     }
 }

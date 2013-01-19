@@ -333,7 +333,7 @@ function handleLinkRated(tab, action) {
 function handleResponse(tab, action) {
 // save response to server
     
-    var tab = tab.id;
+    var tabId = tab.id;
     $.ajax({
         type: 'POST',
         url: XPARTY_URL + "/student_action", 
@@ -351,9 +351,9 @@ function handleResponse(tab, action) {
                 chrome.tabs.sendMessage(tabId, { "type" : RESPONSE_SAVED });
                 chrome.tabs.query({}, function(tabs) {
                     for (i in tabs) {
-                        var tab = tabs[i];
-                        if (isBannerPage(tab.url) && tab.id != tabId) {
-                            chrome.tabs.sendMessage(tab.id, { "type" : RESPONSE_CHANGED, "response" :  data.action.action_data.response });
+                        var otherTab = tabs[i];
+                        if (isBannerPage(otherTab.url) && otherTab.id != tabId) {
+                            chrome.tabs.sendMessage(otherTab.id, { "type" : RESPONSE_CHANGED, "response" :  data.action.action_data.response });
                         }
                     }
                 });
