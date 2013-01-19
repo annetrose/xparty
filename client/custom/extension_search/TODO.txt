@@ -2,22 +2,18 @@ Todo List
 
 * Change SP to XP in logos
 * Understand when to use port messages vs. simple messages
-* Show existing link rating (if any)
+* Load existing task response (if any)
+* Load existing link rating (if any)
 * Add tag cloud for class
 * Maintain local copy of student's task history
 * ?? Update banner info in tab on activate vs. notifying all tabs when something has changed
      
  Bugs
 
-* In query/word panes in teacher view, Anne/anne both show up sometimes until refreshed
 * Chrome appears to pre-load some pages which causes fake followed link to occur.
   An even bigger issue is that the tab id seems to change when the pre-loaded link is actually followed
-  which breaks the extension; use document.webkitHidden to detect if page is visible?
+  which breaks the extension
 * Some visited links change tab id - need to detect and update tab id in stored data
 * Direct links that redirect to another page will not be recorded as direct links
-* Handle searches that also generate a link followed automatically
-* Some followed links may result in multiple urls getting recorded. Redirects?
-* Link saved but banner.js does not receive saved message sometimes
-    Doesn't happen often - maybe when extension is re-loaded and old banner.js is loaded in existing tabs?
-    Could tabId change as a result of some page visits?
-    Remove "saving/loading" messages from banner if no response received?
+* Web interface: In query/word panes in teacher view, Anne/anne both show up sometimes until refreshed
+    
