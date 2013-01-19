@@ -14,8 +14,17 @@ var gUrl = "" + window.location;
 // using chrome.extension.sendMessage so port not needed 
 // var gPort = null;
 
-listenForMessages();
-checkLoginStatus();
+// initialize page: listen for messages and check login status
+// skip hidden pages: chrome appears to pre-load some google search result pages that are not visible
+initPage();
+function initPage() {
+    if (!document.webkitHidden) {
+        listenForMessages();
+        checkLoginStatus();
+    }
+}
+
+document.addEventListener("webkitvisibilitychange", initPage, false);
 
 function checkLoginStatus() {
     chrome.extension.sendMessage({ "type": STUDENT_DATA_REQUEST }, function(response) {
