@@ -229,11 +229,11 @@ function handleLinkFollowed(tab, action) {
     // if new link for tab, save link to server and notify tab 
     if (getStoredTabUrl(tabId) != action.url) {
     
-        // check if direct link
+        // check if no query found or direct link
         // if no referrer, assume user followed link by typing in url or visiting bookmark
         // if direct link, save empty query and then save link followed
         var tabQuery = getStoredTabQuery(tabId);
-        if (!action.referrer && (isUndefined(tabQuery) || tabQuery != EMPTY_QUERY)) {
+        if (isUndefined(tabQuery) || (!action.referrer && tabQuery != EMPTY_QUERY)) {
             storeTabQuery(tabId, EMPTY_QUERY);
             saveSearch(tabId, EMPTY_QUERY, action.url, 
                 function(tabId, data) {
@@ -265,7 +265,7 @@ function handleLinkFollowed(tab, action) {
 
 function saveLinkFollowed(tabId, url, title, onSuccess) {
 // save link on server
-
+	
     $.ajax({
         type: 'POST',
         url: XPARTY_URL + "/student_action", 
