@@ -10,6 +10,7 @@
 var gBannerId = 'xPartyBannerFrame';
 var gBannerHeight = "180px";
 var gUrl = "" + window.location;
+var gInitialized = false;
 
 // using chrome.extension.sendMessage so port not needed 
 // var gPort = null;
@@ -18,9 +19,10 @@ var gUrl = "" + window.location;
 // skip hidden pages: chrome appears to pre-load some google search result pages that are not visible
 initPage();
 function initPage() {
-    if (!document.webkitHidden && !document.getElementById(gBannerId)) {
+    if (!gInitialized && !document.webkitHidden) {
         listenForMessages();
         checkLoginStatus();
+        gInitialized = true;
     }
 }
 
@@ -136,6 +138,7 @@ function createBanner(taskIdx) {
     
     // check if banner already exists on page, if so do not create again
     if (document.getElementById(gBannerId)) {
+    	alert(gBannerId + " already exists on page");
         return;
     }
     
