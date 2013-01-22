@@ -170,7 +170,7 @@ function createBanner(taskIdx) {
     var body = $('body');
     var node = body ? body : html;
     node.append(
-        '<iframe id="' + gBannerId + '" scrolling="no" frameborder="0" allowtransparency="false" '
+        '<iframe id="' + gBannerId + '" scrolling="auto" frameborder="0" allowtransparency="false" '
             + 'style="position: fixed; width: 100%; border:none; z-index: 2147483647; top: 0px;'
             + 'height: ' + gBannerHeight + '; right: 0px; left: 0px;">'
             + '</iframe>'
