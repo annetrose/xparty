@@ -1,5 +1,6 @@
 html, body {
     background-color: #E9E9E9; 
+    font-size: 12pt;
     font-family: helvetica, arial, sans-serif; 
     border-bottom: 1px solid #888;
 }
@@ -21,6 +22,15 @@ html, body {
     margin-top: 10px;
 }
 
+#task_description {
+    font-size: 11pt;
+    font-style: italic;
+}
+
 .smallspaceafter {
     margin-bottom: 5px;
+}
+
+.mediumspaceafter {
+    margin-bottom: 10px;
 }
