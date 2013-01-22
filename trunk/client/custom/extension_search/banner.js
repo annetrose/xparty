@@ -8,7 +8,7 @@
 */
 
 var gBannerId = 'xPartyBannerFrame';
-var gBannerHeight = "220px";
+var gBannerHeight = "200px";
 var gUrl = "" + window.location;
 var gInitialized = false;
 

@@ -1,6 +1,6 @@
 html, body {
     background-color: #E9E9E9; 
-    font-size: 12pt;
+    font-size: 11pt;
     font-family: helvetica, arial, sans-serif; 
     border-bottom: 1px solid #888;
 }
@@ -21,7 +21,7 @@ html, body {
 }
 
 #task_description {
-    font-size: 11pt;
+    font-size: 10pt;
     font-style: italic;
 }
 
