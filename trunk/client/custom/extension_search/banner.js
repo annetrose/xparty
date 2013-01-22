@@ -8,7 +8,7 @@
 */
 
 var gBannerId = 'xPartyBannerFrame';
-var gBannerHeight = "180px";
+var gBannerHeight = "200px";
 var gUrl = "" + window.location;
 var gInitialized = false;
 
@@ -210,11 +210,15 @@ function getBannerHtml() {
     html += '<strong>' + gActivity.class_name + '</strong> <span class="note">#'+gActivity.activity_code+'</span><br/>';
     html += 'Student: ' + getStudentNickname();
     html += '</div>';
+    html += '<div class="mediumspaceafter">';
     html += 'Task: ' + getTaskChooserHtml();
+    html += '</div>';
+    html += '<div class="smallspaceafter">';
     if (isLinkPage(gUrl)) {
-        html += '<br/>Rate this page: ' + getRatingBoxesHtml();
+        html += 'Rate this page: ' + getRatingBoxesHtml();
     }
-    html += '<br/>Response: '+ getResponseHtml();
+    html += '</div>';
+    html += 'Response: '+ getResponseHtml();
     html += '<div id="msg"></div>';
     html += '</div>';
     html += '<div style="clear:both"></div>';
@@ -261,6 +265,7 @@ function getTaskChooserHtml() {
         html += '<option value="'+i+'">'+(i+1)+'. '+gActivity.tasks[i][0]+'</option>';
     }
     html += '</select>';
+    html += '<div id="task_description" style="display:none"></div>';
     return html;
 }
 
@@ -274,6 +279,19 @@ function getSelectedTaskIndex() {
 
 function setTaskIdx(taskIdx) {
     getTaskChooser().val(taskIdx);
+    setTaskDescription(taskIdx);
+}
+
+function setTaskDescription(taskIdx) {
+    var description = gActivity.tasks[taskIdx][1];
+    var div = getBannerElement("#task_description");
+    div.html(description);
+    if (description != "") {
+        div.show();
+    }
+    else {
+        div.hide();
+    }
 }
 
 function initTaskListeners() {
@@ -285,7 +303,9 @@ function removeTaskListeners() {
 }
 
 function onTaskChanged() {
-    chrome.extension.sendMessage({ type: TASK_CHANGED, task_idx: getSelectedTaskIndex() });
+    var taskIdx = getSelectedTaskIndex();
+    setTaskDescription(taskIdx);
+    chrome.extension.sendMessage({ type: TASK_CHANGED, task_idx: taskIdx });
 }
 
 //=====================================================================
