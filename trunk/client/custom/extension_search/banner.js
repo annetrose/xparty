@@ -202,10 +202,8 @@ function hideBanner() {
 
 function getBannerHtml() {
     var html = '<link rel="stylesheet" type="text/css" href="' + chrome.extension.getURL("css/banner.css") + '" />';
-    html += '<div id="col1">';
-    html += '<img src="'+XPARTY_URL+'/imgs/xp_logo.png" alt="XParty Logo" />';
-    html += '</div>';
-    html += '<div id="col2">';
+    html += '<img id="logo" src="'+XPARTY_URL+'/imgs/xp_logo.png" alt="XParty Logo" align="left" />';
+    html += '<div id="task_area">';
     html += '<div class="smallspaceafter">';
     html += '<strong>' + gActivity.class_name + '</strong> <span class="note">#'+gActivity.activity_code+'</span><br/>';
     html += 'Student: ' + getStudentNickname();
@@ -219,9 +217,8 @@ function getBannerHtml() {
     }
     html += '</div>';
     html += 'Response: '+ getResponseHtml();
-    html += '<div id="msg"></div>';
+    html += '<div id="msg"></div>';    
     html += '</div>';
-    html += '<div style="clear:both"></div>';
     return html;
 }
 
