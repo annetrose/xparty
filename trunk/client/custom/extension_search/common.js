@@ -7,7 +7,8 @@
 # License: Apache License 2.0 - http://www.apache.org/licenses/LICENSE-2.0
 */
 
-var XPARTY_URL = "http://xparty-test.appspot.com";
+var XPARTY_URL = "http://xparty-umd.appspot.com";
+//var XPARTY_URL = "http://xparty-test.appspot.com";
 //var XPARTY_URL = "http://localhost:8080";
 var XPARTY_LOGOUT_URL = XPARTY_URL + "/student_logout";
 var XPARTY_SEARCH_URL = XPARTY_URL + "/student";
@@ -34,6 +35,8 @@ var RESPONSE_SAVED = "response_saved";
 var STUDENT_DATA_REQUEST = "student_data_request";
 var STUDENT_DATA_RESPONSE = "student_data_response";
 var ERROR = "error";
+
+var HIDDEN_TAB = "hidden_tab";
 
 var HELPFUL_RATING = "helpful";
 var UNHELPFUL_RATING = "unhelpful";
@@ -118,6 +121,14 @@ function storeTabs(tabs) {
     gTabs = isDefined(tabs) ? tabs : {};
 }
 
+function storeTabWindow(tabId, windowId, index) {
+    if (isUndefined(gTabs[tabId])) {
+        gTabs[tabId] = {};
+    }
+    gTabs[tabId].window_id = windowId;
+    gTabs[tabId].index = index; 
+}
+
 function storeTabQuery(tabId, query, saved) {
     if (isUndefined(gTabs[tabId])) {
         gTabs[tabId] = {};
@@ -143,12 +154,25 @@ function storeTabLink(tabId, url, title) {
     gTabs[tabId].title = title;
 }
 
+function getStoredTabWindow(tabId) {
+    return isDefined(gTabs[tabId]) ? gTabs[tabId].window_id : undefined;
+}
+
+function getStoredTabIndex(tabId) {
+    return isDefined(gTabs[tabId]) ? gTabs[tabId].index : undefined;
+}
+
 function getStoredTabUrl(tabId) {
     return isDefined(gTabs[tabId]) ? gTabs[tabId].url : undefined;
 }
 
 function getStoredTabTitle(tabId) {
     return isDefined(gTabs[tabId]) ? gTabs[tabId].title : "";
+}
+
+function changeTabId(oldTabId, newTabId) {
+    gTabs[newTabId] = gTabs[oldTabId];
+    delete gTabs[oldTabId];
 }
 
 function storeResponse(response) {

@@ -1,19 +1,25 @@
 Todo List
 
-* Change SP to XP in logos
 * Understand when to use port messages vs. simple messages
 * Load existing task response (if any)
 * Load existing link rating (if any)
 * Add tag cloud for class
 * Maintain local copy of student's task history
-* ?? Update banner info in tab on activate vs. notifying all tabs when something has changed
+* Update banner info in tab when tab is activated vs. notifying all tabs when something has changed
+* Send messages from teacher to students  
      
  Bugs
 
+* Some visited links may change tab id - need to detect and update tab id in stored data
+* Direct links that redirect to another page will not be recorded as direct links
+* Queries that display single page, instead of results page, will be recorded as direct links (e.g., fia)
+* Web interface: In query/word panes in teacher view, multiple versions of student name (e.g., Anne/anne) 
+  both show up sometimes until refreshed
+
+Bug Fixes
+
+* Query saved if only hash changed
 * Chrome appears to pre-load some pages which causes fake followed link to occur.
   An even bigger issue is that the tab id seems to change when the pre-loaded link is actually followed
-  which breaks the extension
-* Some visited links change tab id - need to detect and update tab id in stored data
-* Direct links that redirect to another page will not be recorded as direct links
-* Web interface: In query/word panes in teacher view, Anne/anne both show up sometimes until refreshed
-    
+  which breaks the extension 
+* Refresh banner if student logs in when banner already exists on page (can happen if teacher logs student out remotely)   
