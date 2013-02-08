@@ -1,6 +1,10 @@
-# Development and testing
-application: xparty-test
+# Public version
+application: xparty-umd
 version: dev
+
+# Development and testing
+#application: xparty-test
+#version: dev
 
 # For Python 2.7:
 runtime: python27

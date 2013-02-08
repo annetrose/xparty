@@ -395,7 +395,7 @@ DataPane.prototype.updateData = function(data, taskIdx) {
 		var list = this.list.addItems(data);
 		for (var i=0; i<list.length; i++) {
 			var item = list[i];
-			var key = item.getKey();
+			var key = item.getKey();	
 			if (isUndefined(this.expandedLists[key])) {
 				this.expandedLists[key] = this.createExpandedLists();
 			}

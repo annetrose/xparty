@@ -10,39 +10,37 @@
 var gBannerId = 'xPartyBannerFrame';
 var gBannerHeight = "190px";
 var gUrl = "" + window.location;
-var gInitialized = false;
+var gVisible = undefined;
 
 // using chrome.extension.sendMessage so port not needed 
 // var gPort = null;
 
-// initialize page: listen for messages and check login status
-// skip hidden pages: chrome appears to pre-load some google search result pages that are not visible
-initPage();
-function initPage() {
-    if (!gInitialized && !document.webkitHidden) {
-        listenForMessages();
-        checkLoginStatus();
-        gInitialized = true;
-    }
-}
+// notify extension if page is hidden, listen for incoming messages, and check login status
+checkIfHidden();
+listenForMessages();
+checkLoginStatus();
+         
+// chrome appears to pre-load some google search result pages into tabs that are not visible
+// if a tab changes visibility, re-check any page visited actions
+document.addEventListener("webkitvisibilitychange", checkIfHidden, false);
 
-document.addEventListener("webkitvisibilitychange", initPage, false);
-
+// check page again if hash changed
+window.addEventListener("hashchange", checkPageAgain, false);
+               
 function checkLoginStatus() {
-    chrome.extension.sendMessage({ "type": STUDENT_DATA_REQUEST }, function(response) {
     // check login status by requesting student data from background
-
+    chrome.extension.sendMessage({ "type": STUDENT_DATA_REQUEST }, function(response) {
         storeStudent(response.student, false);
         storeActivity(response.activity);
         storeResponse(response.response);
     
-        // on XParty Search web interface
+        // check if on XParty Search web interface
         if (gUrl == XPARTY_SEARCH_URL) {
             // student already logged in so redirect to Google
             if (isStudentLoggedIn()) {
                 window.location = GOOGLE_SEARCH_URL;
             }
-            // student not logged in yet so notify extension that user has logged in via web interface
+            // otherwise, notify extension that user has logged in via web interface
             else {
                 chrome.extension.sendMessage({ "type": LOGIN_VIA_WEB });
             }
@@ -57,7 +55,49 @@ function checkLoginStatus() {
     });
 }
 
+function checkPageAgain() {    
+    // check page actions again if hash changed
+    gUrl = "" + window.location;
+    if (isStudentLoggedIn() && isBannerPage(gUrl)) {
+        checkForPageVisitedActions();
+    }
+}
+
+function checkIfHidden() {
+    // check if page is hidden
+    // chrome appears to pre-load some google search result pages into tabs that are not visible
+    // notify extension if hidden, if not already notified previously
+    
+    var visibilityChanged = isUndefined(gVisible) || (gVisible != !document.webkitHidden);
+    gVisible = !document.webkitHidden;
+    
+    if (visibilityChanged) {
+        if (gVisible) {
+            checkForPageVisitedActions();
+        }
+        else {
+            chrome.extension.sendMessage({ "type": HIDDEN_TAB });        
+        }
+    }
+}
+
 function checkForPageVisitedActions() {
+    // skip if page is hidden
+    if (!gVisible) {
+        return;
+    }
+    
+    // skip if not a banner page
+    if (!isBannerPage(gUrl)) {
+        return;
+    }
+    
+    // skip if user not logged in
+    if (!isStudentLoggedIn()) {
+        return;
+    }
+    
+    // if search page, notify extension
     if (isSearchPage(gUrl)) {
         var query = getSearchQuery(gUrl);
         if (query) {
@@ -65,6 +105,8 @@ function checkForPageVisitedActions() {
             chrome.extension.sendMessage({ "type": SEARCH_PERFORMED, "query": query, "url": gUrl });
         }
     }
+    
+    // if link page, notify extension
     else if (isLinkPage(gUrl)) {
         showLoading("Saving link followed ...");
         var title = $("title").text();
@@ -73,39 +115,43 @@ function checkForPageVisitedActions() {
 }
 
 function listenForMessages() {
-    if (isBannerPage(gUrl)) {    
-        chrome.extension.onMessage.addListener(function(message, sender, sendResponse) {    
-            debug(message.type);
-            if (message.type == LOGIN) {
-                handleLogin(message);
-            }
-            else if (message.type == LOGOUT) {
-                handleLogout(message);
-            }
-            else if (message.type == TASK_CHANGED) {
-                handleTaskChanged(message);
-            }
-            else if (message.type == SEARCH_SAVED) {
-                showMessage("Saved search (" + htmlEscape(message.query) + ")");
-            }
-            else if (message.type == LINK_SAVED) {
-                var link = message.title ? message.title : message.url;
-                showMessage("Link saved (" + link + ")");
-            }
-            else if (message.type == RATING_SAVED) {
-                showMessage("Rating saved");
-            }
-            else if (message.type == RESPONSE_CHANGED) {
-                setResponse(message.response);
-            }
-            else if (message.type == RESPONSE_SAVED) {
-                showMessage("Response saved");
-            }
-            else if (message.type == ERROR) {
-                showMessage("An error occurred. Please try again later.");
-            }
-        });
-    }
+    // skip if not a banner page
+    if (!isBannerPage(gUrl)) {  
+        return;
+    }  
+    
+    // add listener for incoming messages
+    chrome.extension.onMessage.addListener(function(message, sender, sendResponse) {    
+        debug(message.type);
+        if (message.type == LOGIN) {
+            handleLogin(message);
+        }
+        else if (message.type == LOGOUT) {
+            handleLogout(message);
+        }
+        else if (message.type == TASK_CHANGED) {
+            handleTaskChanged(message);
+        }
+        else if (message.type == SEARCH_SAVED) {
+            showMessage("Saved search (" + htmlEscape(message.query) + ")");
+        }
+        else if (message.type == LINK_SAVED) {
+            var link = message.title ? message.title : message.url;
+            showMessage("Link saved (" + link + ")");
+        }
+        else if (message.type == RATING_SAVED) {
+            showMessage("Rating saved");
+        }
+        else if (message.type == RESPONSE_CHANGED) {
+            setResponse(message.response);
+        }
+        else if (message.type == RESPONSE_SAVED) {
+            showMessage("Response saved");
+        }
+        else if (message.type == ERROR) {
+            showMessage("An error occurred. Please try again later.");
+        }
+    });
 }
 
 function handleLogin(message) {
@@ -135,10 +181,15 @@ function handleTaskChanged(message) {
 //=====================================================================
 
 function createBanner(taskIdx) {
+    // skip if not a banner page
+    if (!isBannerPage(gUrl)) {
+        return;
+    }
     
-    // check if banner already exists on page, if so do not create again
+    // check if element with same id as banner already exists on page
     if (document.getElementById(gBannerId)) {
-    	alert(gBannerId + " already exists on page");
+    	debug(gBannerId + " already exists on page");
+    	$('#'+gBannerId).contents().find('html').html(getBannerHtml());
         return;
     }
     

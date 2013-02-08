@@ -8,6 +8,8 @@
 */
 
 var gPendingLoginTabId = -1;
+var gHiddenTabs = [];
+var gLastRemovedTabId = -1;
 
 $(document).ready(function() {
     loadStudent();
@@ -17,7 +19,7 @@ chrome.extension.onMessage.addListener(function(message, sender, sendResponse) {
 // listen for messages sent from popup or content scripts
 
     var tab = sender.tab;
-    debug(message.type+': tab='+tab.id);
+    debug(message.type+': tab='+tab.id+', url='+tab.url);
         
     // TODO: check if tab opened by existing tab
     // if so update stored tab info
@@ -69,10 +71,32 @@ chrome.extension.onMessage.addListener(function(message, sender, sendResponse) {
         handleResponse(tab, message);
     }
     
+    else if (message.type == HIDDEN_TAB) {
+        handleHiddenTab(tab);
+    }
+    
+});
+
+chrome.tabs.onCreated.addListener(function(tab) {
+// listen for any created tabs
+        
+        // check if tab was previously hidden, and if last removed tab was in same window at same position
+        // if so, set new tab info to that of last removed tab
+        var hiddenIndex = indexOfHiddenTab(tab);
+        if (hiddenIndex!=-1 && gLastRemovedTabId!=-1 && tab.windowId==getStoredTabWindow(gLastRemovedTabId) && tab.index==getStoredTabIndex(gLastRemovedTabId)) {
+            changeTabId(gLastRemovedTabId, tab.id);
+            gHiddenTabs.splice(hiddenIndex, 1);
+            gLastRemovedTabId = -1;
+        }
 });
 
 chrome.tabs.onUpdated.addListener(function(tabId, info, tab) {
 // listen for any updated tabs
+// this event is fired twice: info.status == "loading" and info.status == "complete"
+    
+    if (info.status == "complete" && isStudentLoggedIn()) {
+        storeTabWindow(tabId, tab.windowId, tab.index);
+    }
     
     // check for pending logins
     if (info.status == "complete" && isStudentLoggedIn() && gPendingLoginTabId != -1) {
@@ -89,6 +113,14 @@ chrome.tabs.onUpdated.addListener(function(tabId, info, tab) {
         });
     }
 }); 
+
+chrome.tabs.onRemoved.addListener(function(tabId) {
+// listen for any removed tabs
+
+    // keep track of last removed tab
+    // may be needed if hidden tab used to replace this removed tab
+    gLastRemovedTabId = tabId;
+});
 
 function initTabs() {
 // initialize existing tabs when student logs in
@@ -172,6 +204,7 @@ function handleTaskChanged(tab, data) {
 function handleSearch(tab, action) {
 // store new search for tab and save on server
 
+    debug("handleSearch: tab="+tabId+", query="+action.query+", stored query="+getStoredTabQuery(tabId));
     // if new query for tab, save query to server and notify tab
     var tabId = tab.id;
     if (getStoredTabQuery(tabId) != action.query) {
@@ -192,6 +225,7 @@ function handleSearch(tab, action) {
 function saveSearch(tabId, query, url, onSuccess) {
 // save search on server
 
+    debug("saveSearch: tab="+tabId+", query="+query+", url="+url);
     $.ajax({
         type: 'POST',
         url: XPARTY_URL + "/student_action", 
@@ -206,7 +240,6 @@ function saveSearch(tabId, query, url, onSuccess) {
         success: function(data) {
             if (data.status == 1) {
                 storeTabQuery(tabId, data.action.action_data.query);
-                debug("storeTabQuery: "+tabId+','+data.action.action_data.query);
                 if (isFunction(onSuccess)) {
                     onSuccess(tabId, data);
                 }
@@ -253,6 +286,12 @@ function handleLinkFollowed(tab, action) {
         }
         
         else {
+            // NOTE: check for undefined query may not be needed once the issue with 
+            // pre-loading search result pages is handled
+            if (isUndefined(tabQuery)) {
+                tabQuery = EMPTY_QUERY;
+                storeTabQuery(tabId, tabQuery);
+            }
             saveLinkFollowed(tabId, action.url, action.title, onLinkSaved);
         }
     }
@@ -266,6 +305,7 @@ function handleLinkFollowed(tab, action) {
 function saveLinkFollowed(tabId, url, title, onSuccess) {
 // save link on server
 	
+    debug("saveLinkFollowed: tab="+tabId+", query="+getStoredTabQuery(tabId)+", url="+url);
     $.ajax({
         type: 'POST',
         url: XPARTY_URL + "/student_action", 
@@ -362,6 +402,37 @@ function handleResponse(tab, action) {
     });
 }
 
+function handleHiddenTab(tab) {
+    gHiddenTabs.push(tab);
+}
+
+function indexOfHiddenTab(tab) {
+    var index = -1;
+    for (i in gHiddenTabs) {
+        if (gHiddenTabs[i].id == tab.id) {
+            index = i;
+            break;
+        }
+    }
+    return index;
+}
+
 function sendError(tabId, msg) {
     chrome.tabs.sendMessage(tabId, { "type" : ERROR, "msg": isDefined(msg) ? msg : "" });
+}
+
+//=====================================================================
+// For Debugging
+//=====================================================================
+
+function printTabs(title) {
+        chrome.tabs.query({ "status" : "complete" }, function(tabs) {
+                debug("==========" + (isDefined(title) ? " " + title + " " : "") + "==========");
+                for (var i in tabs) {
+                        var tab = tabs[i];
+                        if (tab.url.indexOf("chrome") != 0) {
+                            debug(i+": tab="+tab.id+", "+tab.url+", window="+tab.windowId);
+                        }
+                }
+        });
 }
