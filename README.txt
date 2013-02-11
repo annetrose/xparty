@@ -18,7 +18,7 @@ HOW TO CREATE A CUSTOM STUDENT VIEW FOR AN ACTIVITY TYPE
   {% block custom_head %} should load any custom javascript, css, etc.
   {% block task_gui %} should load the UI for a task.
   
-* Create a javascript file in client/custom/js named student_xxx.js
+* Create a javascript file in client/custom/xxx/js named student_xxx.js
   where xxx is the activity type.  Load js in student_xxx.html.
   
   (Optional) Implement initCustomUI().
@@ -35,7 +35,7 @@ HOW TO CREATE A CUSTOM TEACHER VIEW FOR AN ACTIVITY TYPE
   
   {% block custom_head %} should load any custom javascript, css, etc.
   
-* Create a javascript file in client/custom/js named teacher_xxx.js
+* Create a javascript file in client/custom/xxx/js named teacher_xxx.js
   where xxx is the activity type. Load js in teacher_xxx.html.
   
   (Optional) Implement defineCustomPanes() to define any custom data panes.

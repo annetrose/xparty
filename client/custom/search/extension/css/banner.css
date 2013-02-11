@@ -16,8 +16,19 @@ html, body {
     margin-top: 10px;
 }
 
+#tagcloud_area {
+    float: left;
+    width: 250px;
+    margin: 15px;
+}
+
+#tagcloud_area iframe {
+    border: none;
+}
+
 #task_area {
-    margin: 15px 15px 15px 200px;
+    float: left;
+    margin: 15px;
 }
 
 #task_description {
