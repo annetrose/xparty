@@ -27,8 +27,8 @@ ACTION_COLORS[RESPONSE] = "blue";
 UNRATED = "unrated";
 HELPFUL_RATING = "helpful";
 UNHELPFUL_RATING = "unhelpful";
-HELPFUL_IMAGE = "/custom/imgs/helpful.png"; 
-UNHELPFUL_IMAGE = "/custom/imgs/unhelpful.png";
+HELPFUL_IMAGE = "/custom/search/imgs/helpful.png"; 
+UNHELPFUL_IMAGE = "/custom/search/imgs/unhelpful.png";
 
 // domains that can not be displayed in an iframe
 NO_FRAME_DOMAINS = [ "youtube.com", "google.com", "oprah.com", "facebook.com", "urbandictionary.com" ];

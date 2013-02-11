@@ -270,6 +270,14 @@ function getBannerHtml() {
     html += 'Response: '+ getResponseHtml();
     html += '<div id="msg"></div>';    
     html += '</div>';
+    
+    // under development
+    // need tagcloud html from server
+    //html += '<div id="tagcloud_area">';
+    //html += '<iframe src="'+XPARTY_URL+'">';
+    //html += '</iframe>';
+    //html += '</div>';
+
     return html;
 }
 
