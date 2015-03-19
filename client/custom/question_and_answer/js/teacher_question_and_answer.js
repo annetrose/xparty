@@ -11,8 +11,8 @@
 var ANSWER_PANE = "answer";
 var ANSWER_ACTIONS = [ "answer" ];
 	
-function defineCustomPanes() {
-	gDataPanes.push(new AnswerPane());
+function addCustomPanes() {
+	addDataPane(new AnswerPane());
 }
 
 //=================================================================================
@@ -24,15 +24,24 @@ function AnswerPane() {
 }
 AnswerPane.prototype = Object.create(ActionPane.prototype);
 
+AnswerPane.prototype.createAccordion = function(div) {
+    return new AnswerAccordion(div, this.list);
+}
+
 AnswerPane.prototype.createList = function() {
 	return new AnswerList(ANSWER_ACTIONS);
 }
 
-AnswerPane.prototype.createExpandedLists = function() {
-	return [ new StudentList(ANSWER_ACTIONS) ];
+function AnswerAccordion(div, items) {
+    ActionAccordion.call(this, div, items);
 }
+AnswerAccordion.prototype = Object.create(ActionAccordion.prototype);
 
 function AnswerList(actionTypes) {
 	ActionList.call(this, "Answers", "answer", actionTypes);
 }
 AnswerList.prototype = Object.create(ActionList.prototype);
+
+AnswerList.prototype.createItemLists = function() {
+    return [ new StudentList(ANSWER_ACTIONS) ];
+}

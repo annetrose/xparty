@@ -14,6 +14,7 @@ from server.view.MainPage import MainPage
 from server.view.AdminPage import AdminPage
 from server.view.StudentLoginPage import StudentLoginPage
 from server.view.StudentPage import StudentPage
+from server.view.TagCloudPage import TagCloudPage
 from server.view.TeacherDashboardPage import TeacherDashboardPage
 from server.view.TeacherPage import TeacherPage
 from server.api.StudentActionHandler import StudentActionHandler
@@ -36,6 +37,7 @@ application = webapp2.WSGIApplication([
     ('/admin',                     AdminPage),
     ('/student_login',             StudentLoginPage),
     ('/student',                   StudentPage),
+    ('/tagcloud/([-_A-Za-z0-9]+)/([0-9]+)', TagCloudPage),
     ('/teacher_dashboard',         TeacherDashboardPage),
     ('/teacher/([-_A-Za-z0-9]+)',  TeacherPage),  
     

@@ -19,47 +19,56 @@ var WORD_PANE = "word";
 var LINK_PANE = "link";
 var RESPONSE_PANE = "response";
 
+// student actions to listen for
 var QUERY_ACTIONS = [SEARCH];
 var LINK_ACTIONS = [ LINK_FOLLOWED, RATED_HELPFUL, RATED_UNHELPFUL ];
 var RESPONSE_ACTIONS = [ RESPONSE ];
 
-function defineCustomPanes() {
+function addCustomPanes() {
 	// student and task history panes included by default
-	gDataPanes.push(new QueryPane());
-	gDataPanes.push(new WordPane());		
-	gDataPanes.push(new LinkPane());
-	gDataPanes.push(new ResponsePane());
+	addDataPane(new QueryPane());
+	addDataPane(new WordPane());		
+	addDataPane(new LinkPane());
+	addDataPane(new ResponsePane());
 }
 
-function defineCustomActionDescriptions(action) {
-	// used to display task history in StudentPane and HistoryPane
-	// function not required if action.action_description used for all action types
-	var html = "";
-	var list = null;
-	switch(action.action_type) {
+function customActionDescriptionToHtml(action) {
+// used to display task history in StudentPane and HistoryPane
+// function not required if action displayed action description in simple text
+	
+	var actionType = getActionType(action);
+	var actionText = getActionDescription(action);
+    var key = undefined;
+	var paneKey = undefined;
+	
+	switch(actionType) {
 	case SEARCH:
-		list = new QueryList();
-		break;
+        key = getActionData(action, "query");
+	    paneKey = QUERY_PANE;
+	    break;
 	case LINK_FOLLOWED:
 	case RATED_HELPFUL:
 	case RATED_UNHELPFUL:
-		list = new LinkList();
+	    key = getActionData(action, "url");
+	    actionText = getActionData(action, "title");
+	    paneKey = LINK_PANE;
 		break;
 	case RESPONSE:
-		list = new ResponseList();
-		break;
-	default:
-		list = null;
-		html = action.action_description;
+	    key = getActionData(action, "response");
+	    paneKey = RESPONSE_PANE;
 		break;
 	}
-	
-	if (list != null) {
-		var items = list.addItems(action);
-		html = list.itemAsHtml(items[0].getKey(), undefined, "");
-	}
-	
+		
+    var html = isDefined(paneKey) ? '<a href="#" class="item_link">' : "";
+    html += htmlEscape(actionText);
+    html += '<span class="item_key">' + htmlEscape(key) + '</span>';
+    html += isDefined(paneKey) ? '<span class="item_pane">' + htmlEscape(paneKey) + '</span></a>' : "";
 	return html;
+	
+	// xx TUESDAY
+	// xx links not working in task history, but do work in student history
+	// xx where is callback registration happening (and are we just getting lucky)
+	// xx students should default to login status sort
 }
 
 //=================================================================================
@@ -74,29 +83,64 @@ function defineCustomActionDescriptions(action) {
 // In this case, the most recent link rating is used.
 
 function QueryPane() {
-    ActionPane.call(this, QUERY_PANE, "Queries", QUERY_ACTIONS, { "showTagCloud":true });
+    ActionPane.call(this, QUERY_PANE, "Queries", { "showTagCloud":true });
 }
 QueryPane.prototype = Object.create(ActionPane.prototype);
 
-QueryPane.prototype.createTagCloud = function(div) {
-	return new QueryCloud(div, this.list);
-}
-
 QueryPane.prototype.createList = function() {
-	return new QueryList();
+    var list = new QueryList();
+        
+    // xx where should this go, doesn't belong here since query won't be in expanded section in query pane
+    $(list).on("xp_query_rating_added", { pane: this }, function(event) {
+        var pane = event.data.pane;
+        if (isCurrentPane(pane)) {
+            pane.accordion.refreshExpanded();
+        }
+    });
+   
+    this.itemLists = this.createItemLists(list.getKeyProperty());
+	return list;
 }
 
-QueryPane.prototype.createExpandedLists = function() {
-	var lists = [];
-	lists.push(new StudentList(QUERY_ACTIONS));
-	lists.push(new LinkList());
-	return lists;
+QueryPane.prototype.createItemLists = function(groupProperty) {
+    var itemLists = [];
+    var options = { groupProperty: groupProperty };
+    itemLists.push({ list: new StudentList(QUERY_ACTIONS, options), view: "StudentListView" });
+    itemLists.push({ list: new LinkList(options), view: "LinkListView" });
+     
+    for (var i in itemLists) {
+        var list = itemLists[i].list;
+        $(list).on("xp_action_added", { pane: this }, function(event) {
+            var pane = event.data.pane;
+            if (isCurrentPane(pane)) {
+                // xx check if action is associated with expanded section
+                // instead of refreshing always
+                pane.accordion.refreshExpanded();
+            }        
+        });
+        
+        // xx create method to get list.updateActions, if any
+        // better name, not an action but event type?
+        for (var j in list.updateActions) {
+            var eventType = list.updateActions[j];
+            $(list).on(eventType, { pane: this }, function(event) {
+                var pane = event.data.pane;
+                if (isCurrentPane(pane)) {
+                    pane.accordion.refreshExpanded();
+                }
+            });
+        }
+    }
+    
+    return itemLists;
+}
+    
+QueryPane.prototype.createAccordion = function(div) {
+    return new QueryAccordion(div, this.list, this.itemLists);
 }
 
-QueryPane.prototype.updateData = function(data, taskIdx) {
-	ActionPane.prototype.updateData.call(this, data, taskIdx);
-	var keysChanged = this.list.updateRatings(data, taskIdx);
-	this.setItemsChanged(keysChanged);
+QueryPane.prototype.createTagCloud = function(div) {
+    return new QueryCloud(div, this.list);
 }
 
 function QueryCloud(div, items, options) {
@@ -137,16 +181,54 @@ QueryCloud.prototype.getColors = function() {
 
 function QueryList(actionTypes) {
 	var actionTypes = isDefined(actionTypes) ? actionTypes : QUERY_ACTIONS;
-	ActionList.call(this, "Queries", "query", actionTypes);
-	this.setFilters([ "Helpful", "Unhelpful", "Unrated" ]);
 	this.keyVersions = {};
-	this.ratings = {};
-	this.defaultPaneKey = QUERY_PANE;
+    this.ratings = {};
+    
+	var options = {};
+	options.secondary_actions = [{ eventType : "xp_update_query_rating", actionTypes: LINK_ACTIONS }];
+	options.filters = { types : ["Helpful", "Unhelpful", "Unrated"] };
+	ActionList.call(this, "Queries", "query", actionTypes, options);
+		
+	$(this).on("xp_update_query_rating", null, function(event) {
+	    var ratingChanged = this.updateRating(event.action);
+	    if (ratingChanged) {
+            $(this).trigger({ type: "xp_query_rating_added", action: event.action });
+        }
+	});
+	
+	this.updateActions = [];
+	this.updateActions.push("xp_query_rating_added");
 }
 QueryList.prototype = Object.create(ActionList.prototype);
 
 QueryList.prototype.createItems = function(action) {
 	var items = ActionList.prototype.createItems.call(this, action);
+	
+	// initialize query ratings
+	//
+	for (var i in items) {
+	    var key = items[i].getKey();
+	    var studentNickname = getStudentNickname(action);
+	    
+	    // check if query has been performed before
+        // if not, initialize query ratings
+        //
+        if (isUndefined(this.ratings[key])) {
+            this.ratings[key] = {};
+        }
+                
+        // check if this student has rated this query before
+        // if not, initialize query ratings for this student
+        // where rating is overall query rating and link_ratings
+        // are most recent ratings for followed links (key is link url and value is rating)
+        //
+        if (isUndefined(this.ratings[key][studentNickname])) {
+            this.ratings[key][studentNickname] = { "rating": UNRATED, "link_ratings": {} };
+        }
+    }
+	
+	// update query versions, if needed
+	//
 	if (items.length > 0) {
 		var queryVersion = items[0].getKey();
 		var queryKey = queryVersion.toLowerCase();
@@ -158,93 +240,63 @@ QueryList.prototype.createItems = function(action) {
 			this.keyVersions[queryKey].push(queryVersion);
 		}
 	}
+	
 	return items;
 }
 
-QueryList.prototype.updateRatings = function(action, taskIdx) {	
+QueryList.prototype.updateRating = function(action) {	
 	// BEHAVIOR: query ratings are based on link ratings
 	// if a student doesn't rate any followed links, the query is unrated
 	// if a student rates any followed link as helpful, the query is helpful
 	// if a student rates all followed links as unhelpful, the query is unhelpful
 	// a student may rate the same link more than once after a query, if so, the most recent rating is used
 		
-	var keysChanged = [];
-	var studentNickname = action.student_nickname;
-	
-	var newItems = this.createItems(action);
-	for (var i=0; i<newItems.length; i++) {
-		var key = newItems[i].getKey();
-		
-		// check if query has been performed before
-		// if not, initialize query ratings
-		//
-		if (isUndefined(this.ratings[key])) {
-			this.ratings[key] = {};
+	// xx "query" is really key property, should not know property name?
+	var studentNickname = getStudentNickname(action);
+    var query = getActionData(action, "query");
+    
+	// check if this student has rated this query before
+    // if not, initialize query ratings for this student
+    // where rating is overall query rating and link_ratings
+    // are most recent ratings for followed links (key is link url and value is rating)
+    //
+    if (isUndefined(this.ratings[query][studentNickname])) {
+        this.ratings[query][studentNickname] = { "rating": UNRATED, "link_ratings": {} };
+    }
+        			
+    // if student rated a link, update ratings as needed
+	//
+	var url = getActionData(action, "url");
+	var rating = getActionData(action, "rating");
+	var linkRatings = this.ratings[query][studentNickname].link_ratings;
+			
+	if (isUndefined(linkRatings[url])) {
+		linkRatings[url] = UNRATED;
+	}
+			
+	if (isDefined(rating)) {
+		linkRatings[url] = rating;
+	}
+			
+	var queryRating = UNRATED;
+	for (url in linkRatings) {
+		if (linkRatings[url] == HELPFUL_RATING) {
+			queryRating = HELPFUL_RATING;
+			break;
 		}
-				
-	    // check if this student has rated this query before
-	    // if not, initialize query ratings for this student
-	    // where rating is overall query rating and link_ratings
-	    // are most recent ratings for followed links (key is link url and value is rating)
-	    //
-		if (isUndefined(this.ratings[key][studentNickname])) {
-			this.ratings[key][studentNickname] = { "rating": UNRATED, "link_ratings": {} };
-			keysChanged.push(key);
-		}
-		
-		// if student rated a link, update ratings as needed
-		//
-		var isLinkRating = isDefined(action) && action.task_idx==taskIdx && $.inArray(action.action_type, LINK_ACTIONS) > -1;
-		if (isLinkRating) {
-			var url = action.action_data["url"];
-			var rating = action.action_data["rating"];
-			var linkRatings = this.ratings[key][studentNickname].link_ratings;
-			
-			if (isUndefined(linkRatings[url])) {
-				linkRatings[url] = UNRATED;
-			}
-			
-			if (isDefined(rating)) {
-				linkRatings[url] = rating;
-			}
-			
-			var queryRating = UNRATED;
-			for (url in linkRatings) {
-				if (linkRatings[url] == HELPFUL_RATING) {
-					queryRating = HELPFUL_RATING;
-					break;
-				}
-				else if (linkRatings[url] == UNHELPFUL_RATING) {
-					queryRating = UNHELPFUL_RATING;
-				}
-			}
-			
-			// if rating changed, return key to mark item as changed
-			if (this.ratings[key][studentNickname]["rating"] != queryRating) {
-				this.ratings[key][studentNickname]["rating"] = queryRating;
-				if ($.inArray(key, keysChanged) == -1) {
-					keysChanged.push(key);
-				}
-			}
+		else if (linkRatings[url] == UNHELPFUL_RATING) {
+			queryRating = UNHELPFUL_RATING;
 		}
 	}
-	
-	return keysChanged;
-}
+			
+	var ratingChanged = false;
+	var oldRating = this.ratings[query][studentNickname]["rating"];
+	if (queryRating != oldRating) {
+		this.ratings[query][studentNickname]["rating"] = queryRating;
+		ratingChanged = true;
+	}	
 
-QueryList.prototype.itemAsHtml = function(key, itemText, countText, paneKey) {
-	var itemText = isDefined(itemText) ? itemText : this.keyVersions[key].join(", ");
-	var countText = isDefined(countText) ? countText : this.ratingsAsHtml(key);
-	return ActionList.prototype.itemAsHtml.call(this, key, itemText, countText, paneKey);
-}
-
-QueryList.prototype.ratingsAsHtml = function(key) {
-	var countText = [];
-	var counts = this.getRatingCounts(key);
-	if (counts[HELPFUL_RATING] > 0) countText.push(getRatingImage(HELPFUL_RATING) + counts[HELPFUL_RATING]);
-	if (counts[UNHELPFUL_RATING] > 0) countText.push(getRatingImage(UNHELPFUL_RATING) + counts[UNHELPFUL_RATING]);
-	if (counts[UNRATED] > 0) countText.push(counts[UNRATED] + '&nbsp;unrated');
-	return countText.length > 0 ? countText.join(", ") : "";
+	return ratingChanged;
 }
 
 QueryList.prototype.getRatingCounts = function(key) {
@@ -271,6 +323,61 @@ QueryList.prototype.filterToRating = function(filter) {
 	return filter=="Helpful" ? HELPFUL_RATING : (filter=="Unhelpful" ? UNHELPFUL_RATING : UNRATED);
 }
 
+function QueryListView(list, groupKey) {
+    ListView.call(this, list, groupKey, QUERY_PANE);
+}
+QueryListView.prototype = Object.create(ListView.prototype);
+
+QueryListView.prototype.itemAsHtml = function(key, itemText, countText) {
+    var itemText = isDefined(itemText) ? itemText : this.list.keyVersions[key].join(", ");
+    var countText = isDefined(countText) ? countText : this.ratingsAsHtml(key);
+    return ListView.prototype.itemAsHtml.call(this, key, itemText, countText);
+}
+
+// xx also in accordion
+QueryListView.prototype.ratingsAsHtml = function(key) {
+    var countText = [];
+    var counts = this.list.getRatingCounts(key);
+    if (counts[HELPFUL_RATING] > 0) countText.push(getRatingImage(HELPFUL_RATING) + counts[HELPFUL_RATING]);
+    if (counts[UNHELPFUL_RATING] > 0) countText.push(getRatingImage(UNHELPFUL_RATING) + counts[UNHELPFUL_RATING]);
+    if (counts[UNRATED] > 0) countText.push(counts[UNRATED] + '&nbsp;unrated');
+    return countText.length > 0 ? countText.join(", ") : "";
+}
+    
+function QueryAccordion(div, list, itemLists) {
+    ActionAccordion.call(this, div, list);
+    this.itemLists = itemLists;
+}
+QueryAccordion.prototype = Object.create(ActionAccordion.prototype);
+
+QueryAccordion.prototype.itemAsHtml = function(key, itemText, countText) {
+    var itemText = isDefined(itemText) ? itemText : this.list.keyVersions[key].join(", ");
+    var countText = isDefined(countText) ? countText : this.ratingsAsHtml(key);
+    return ActionAccordion.prototype.itemAsHtml.call(this, key, itemText, countText);
+}
+
+QueryAccordion.prototype.ratingsAsHtml = function(key) {
+    var countText = [];
+    var counts = this.list.getRatingCounts(key);
+    if (counts[HELPFUL_RATING] > 0) countText.push(getRatingImage(HELPFUL_RATING) + counts[HELPFUL_RATING]);
+    if (counts[UNHELPFUL_RATING] > 0) countText.push(getRatingImage(UNHELPFUL_RATING) + counts[UNHELPFUL_RATING]);
+    if (counts[UNRATED] > 0) countText.push(counts[UNRATED] + '&nbsp;unrated');
+    return countText.length > 0 ? countText.join(", ") : "";
+}
+
+// xx change itemLists to groupLists
+// xx somewhere generic?
+// xx changed from expandedAsHtml
+QueryAccordion.prototype.createExpanded = function(div, key, i) {
+    div.empty();
+    for (var j in this.itemLists) {
+        var listViewId = "listview" + (i+1) + "_" + (j+1);
+        div.append('<div id="'+listViewId+'"></div>');
+        var listView = new window[this.itemLists[j].view](this.itemLists[j].list, key);
+        listView.create($("#"+listViewId));
+    }
+}
+
 //=================================================================================
 // Word Pane
 //=================================================================================
@@ -286,34 +393,18 @@ WordPane.prototype.createList = function() {
 	return new WordList(this.actionTypes);
 }
 
-WordPane.prototype.createExpandedLists = function() {
-	var lists = [];
-	lists.push(new StudentList(QUERY_ACTIONS));
-	lists.push(new QueryList([ SEARCH, LINK_FOLLOWED, RATED_HELPFUL, RATED_UNHELPFUL ]));
-	lists.push(new LinkList());
-	return lists;
+WordPane.prototype.createAccordion = function(div) {
+    return new WordAccordion(div, this.list);
 }
 
-WordPane.prototype.updateData = function(data, taskIdx) {	
-	QueryPane.prototype.updateData.call(this, data, taskIdx);
-	var list = this.list.createItems(data);
-	for (var i=0; i<list.length; i++) {
-		var key = list[i].getKey();
-		// check if expandedLists is defined for key
-        // if not, means data has property with same name as list.keyProperty
-        if (isDefined(this.expandedLists[key])) {
-    		var queryList = this.expandedLists[key][1];
-    		if (queryList.isItemData(data, taskIdx)) {
-    			queryList.updateRatings(data, taskIdx);
-    		}
-		}
-	}
+function WordAccordion(div, items) {
+    QueryAccordion.call(this, div, items);
 }
+WordAccordion.prototype = Object.create(QueryAccordion.prototype);
 
 function WordList(actionTypes) {
 	QueryList.call(this, actionTypes);
 	this.title = "Words";
-	this.defaultPaneKey = WORD_PANE;
 }
 WordList.prototype = Object.create(QueryList.prototype);
 
@@ -329,7 +420,7 @@ WordList.prototype.createItems = function(action) {
 			    var wordVersion = words[j];
 			    var wordKey = words[j].toLowerCase();
 			    if (!isStopWord(wordKey)) {
-				    wordItems.push(new DataItem(wordKey, action));
+				    wordItems.push(new ActionItem(wordKey, action));
 				    if (isUndefined(this.keyVersions[wordKey])) {
 					    this.keyVersions[wordKey] = [];
 				    }
@@ -343,17 +434,25 @@ WordList.prototype.createItems = function(action) {
 	return wordItems;
 }
 
+WordList.prototype.createItemLists = function() {
+    var lists = [];
+    lists.push(new StudentList(QUERY_ACTIONS));
+    lists.push(new QueryList([ SEARCH, LINK_FOLLOWED, RATED_HELPFUL, RATED_UNHELPFUL ]));
+    lists.push(new LinkList());
+    return lists;
+}
+
 //=================================================================================
 // Link Pane
 //=================================================================================
 
 function LinkPane() {
-    ActionPane.call(this, LINK_PANE, "Links", LINK_ACTIONS, { "showTagCloud":true });
+    ActionPane.call(this, LINK_PANE, "Links", { "showTagCloud":true });
 }
 LinkPane.prototype = Object.create(ActionPane.prototype);
 
 LinkPane.prototype.createAccordion = function(div) {
-	return new LinkAccordion(div, this.list, this.expandedLists);
+	return new LinkAccordion(div, this.list);
 }
 
 LinkPane.prototype.createTagCloud = function(div) {
@@ -361,41 +460,62 @@ LinkPane.prototype.createTagCloud = function(div) {
 }
 
 LinkPane.prototype.createList = function() {
-	return new LinkList();
+	var list = new LinkList();    
+    this.itemLists = this.createItemLists(list.getKeyProperty());
+    return list;
 }
 
-LinkPane.prototype.createExpandedLists = function() {
-	var lists = [];
-	lists.push(new StudentList([ LINK_FOLLOWED ]));
-	lists.push(new QueryList(LINK_ACTIONS));
-	return lists;
+// xx make default function that returns []
+LinkPane.prototype.createItemLists = function(groupProperty) {
+    var itemLists  = [];
+    // xx LINK_ACTIONS or just [ LINK_FOLLOWED ]    
+    var options = { groupProperty: groupProperty };
+    itemLists.push({ list: new StudentList(LINK_ACTIONS, options), view: "StudentListView" });
+    itemLists.push({ list: new QueryList(LINK_ACTIONS), view: "QueryListView" });
+
+    for (var i in itemLists) {
+        var list = itemLists[i].list;
+        $(list).on("xp_action_added", { pane: this }, function(event) {
+            var pane = event.data.pane;
+            if (isCurrentPane(pane)) {
+                // xx check if action is associated with expanded section
+                // instead of refreshing always
+                pane.accordion.refreshExpanded();
+            }        
+        });
+    }
+    
+    return itemLists;   
 }
 
-LinkPane.prototype.updateData = function(data, taskIdx) {	
-	ActionPane.prototype.updateData.call(this, data, taskIdx);
-	var list = this.list.createItems(data);
-	if (list.length > 0) {
-        var key = list[0].getKey();
-        // check if expandedLists is defined for key
-        // if not, means data has property with same name as list.keyProperty
-		if (isDefined(this.expandedLists[key])) {
-    		var queryList = this.expandedLists[key][1];
-    		if (queryList.isItemData(data, taskIdx)) {
-    			queryList.updateRatings(data, taskIdx);
-    		}
-		}
-	}
+function LinkAccordion(div, items) {
+	ActionAccordion.call(this, div, items);
 }
-	
-function LinkAccordion(div, items, expandedItems) {
-	AccordionList.call(this, div, items, expandedItems);
-}
-LinkAccordion.prototype = Object.create(AccordionList.prototype);
+LinkAccordion.prototype = Object.create(ActionAccordion.prototype);
 
-LinkAccordion.prototype.expandedAsHtml = function(key, i) {
+LinkAccordion.prototype.itemAsHtml = function(key, itemText, countText, paneKey) {
+    var action = this.list.getAction(key);
+    var linkTitle = getActionData(action, "title");
+    var linkUrl = getActionData(action, "url");
+    var defaultItemText = linkTitle != "" ? linkTitle.clip(50) : linkUrl.clip(50);
+    var itemText = isDefined(itemText) && itemText != "" ? itemText : defaultItemText;
+    var countText = isDefined(countText) ? countText : this.ratingsAsHtml(key);
+    return ActionAccordion.prototype.itemAsHtml.call(this, key, itemText, countText, paneKey);
+}
+
+LinkAccordion.prototype.ratingsAsHtml = function(key) {
+    var countText = [];
+    var counts = this.list.getRatingCounts(key);
+    if (counts[HELPFUL_RATING] > 0) countText.push(getRatingImage(HELPFUL_RATING) + counts[HELPFUL_RATING]);
+    if (counts[UNHELPFUL_RATING] > 0) countText.push(getRatingImage(UNHELPFUL_RATING) + counts[UNHELPFUL_RATING]);
+    if (counts[UNRATED] > 0) countText.push(counts[UNRATED] + '&nbsp;unrated');
+    return countText.length > 0 ? countText.join(", ") : "";
+}
+
+LinkAccordion.prototype.createExpanded = function(div, key, i) {
 	var html = '<p class="small" style="margin-top:0px; margin-bottom:15px">' + getLinkHtml(key, "View Link") + "</p>";
-	html += AccordionList.prototype.expandedAsHtml.call(this, key, i);
-	return html;
+	//html += ActionAccordion.prototype.expandedAsHtml.call(this, key, i);
+	div.html(html);
 }
 
 function LinkCloud(div, items, options) {
@@ -430,48 +550,76 @@ LinkCloud.prototype.getColors = function() {
 	
 }
 
-function LinkList() {
-	ActionList.call(this, "Links Followed", "url", LINK_ACTIONS);
-	this.setFilters([ "Helpful", "Unhelpful", "Unrated" ]);
-	this.ratings = {};
-	this.defaultPaneKey = LINK_PANE;
+function LinkList(options) {
+    this.ratings = {};
+    options = isDefined(options) ? options : {};
+    options.secondary_actions = [{ eventType : "xp_update_link_rating", actionTypes: [ RATED_HELPFUL, RATED_UNHELPFUL ] }];
+	options.filters = { types : ["Helpful", "Unhelpful", "Unrated"] };
+	ActionList.call(this, "Links Followed", "url", [ LINK_FOLLOWED ], options);
+
+	$(this).on("xp_update_link_rating", null, function(event) {
+        var ratingChanged = this.updateRating(event.action);
+        if (ratingChanged) {
+            $(this).trigger({ type: "xp_link_rating_added", action: event.action });
+        }
+    });
+    
+    this.updateActions = [];    
+    this.updateActions.push("xp_update_link_rating");
 }
 LinkList.prototype = Object.create(ActionList.prototype);
 
-LinkList.prototype.addItems = function(action) {	
-	var items = ActionList.prototype.addItems.call(this, action);
-	var studentNickname = action.student_nickname;
-	
-	// assume only one link per action
-	var key = items[0].getKey();
-	
-	if (isUndefined(this.ratings[key])) {
-		this.ratings[key] = {};
-	}		
-	if (isUndefined(this.ratings[key][studentNickname])) {
-		this.ratings[key][studentNickname] = UNRATED;
-	}
-	if (action.action_type == RATED_HELPFUL || action.action_type == RATED_UNHELPFUL) {
-		this.ratings[key][studentNickname] = action.action_data["rating"];
-	}
-	return items;
+LinkList.prototype.createItems = function(action) {
+    var items = ActionList.prototype.createItems.call(this, action);
+    
+    // initialize query ratings
+    //
+    for (var i in items) {
+        var key = items[i].getKey();
+        var studentNickname = getStudentNickname(action);
+        
+        // check if query has been performed before
+        // if not, initialize query ratings
+        //
+        if (isUndefined(this.ratings[key])) {
+            this.ratings[key] = {};
+        }
+                
+        // check if this student has rated this link before
+        // if not, initialize link rating for this student
+        //
+        if (isUndefined(this.ratings[key][studentNickname])) {
+            this.ratings[key][studentNickname] = UNRATED;
+        }
+    }
+        
+    return items;
 }
 
-LinkList.prototype.itemAsHtml = function(key, itemText, countText, paneKey) {
-	var action = this.getAction(key);
-	var defaultItemText = action.action_data.title != "" ? action.action_data.title.clip(50) : action.action_data.url.clip(50);
-	var itemText = isDefined(itemText) && itemText != "" ? itemText : defaultItemText;
-	var countText = isDefined(countText) ? countText : this.ratingsAsHtml(key);
-	return ActionList.prototype.itemAsHtml.call(this, key, itemText, countText, paneKey);
-}
-
-LinkList.prototype.ratingsAsHtml = function(key) {
-	var countText = [];
-	var counts = this.getRatingCounts(key);
-	if (counts[HELPFUL_RATING] > 0) countText.push(getRatingImage(HELPFUL_RATING) + counts[HELPFUL_RATING]);
-	if (counts[UNHELPFUL_RATING] > 0) countText.push(getRatingImage(UNHELPFUL_RATING) + counts[UNHELPFUL_RATING]);
-	if (counts[UNRATED] > 0) countText.push(counts[UNRATED] + '&nbsp;unrated');
-	return countText.length > 0 ? countText.join(", ") : "";
+LinkList.prototype.updateRating = function(action) {   
+    // BEHAVIOR: a student may rate the same link more than once after a query, 
+    // if so, the most recent rating is used
+    
+    // xx "url" is really key property, should not know property name?
+    var studentNickname = getStudentNickname(action);
+    var link = getActionData(action, "url");
+    
+    // check if this student has rated this link before
+    // if not, initialize rating for this student
+    //
+    if (isUndefined(this.ratings[link][studentNickname])) {
+        this.ratings[link][studentNickname] = UNRATED;
+    }
+    
+    var ratingChanged = false;                
+    var newRating = getActionData(action, "rating");
+    var oldRating = this.ratings[link][studentNickname];
+    if (newRating != oldRating) {
+        this.ratings[link][studentNickname] = newRating;
+        ratingChanged = true;
+    }
+            
+    return ratingChanged;
 }
 
 LinkList.prototype.getRatingCounts = function(key) {
@@ -496,11 +644,37 @@ LinkList.prototype.getRatingCounts = function(key) {
 
 LinkList.prototype.getValueForSort = function(key) {
 	var action = this.getAction(key);
-	return action.action_data.title ? action.action_data.title : action.action_data.url;
+	var linkTitle = getActionData(action, "title");
+	var linkUrl = getActionData(action, "url");
+	return linkTitle ? linkTitle : linkUrl;
 }
 
 LinkList.prototype.filterToRating = function(filter) {
 	return filter=="Helpful" ? HELPFUL_RATING : (filter=="Unhelpful" ? UNHELPFUL_RATING : UNRATED);
+}
+
+function LinkListView(list, groupKey) {
+    ListView.call(this, list, groupKey, LINK_PANE);
+}
+LinkListView.prototype = Object.create(ListView.prototype);
+
+LinkListView.prototype.itemAsHtml = function(key, itemText, countText) {
+    var action = this.list.getAction(key);
+    var linkTitle = getActionData(action, "title");
+    var linkUrl = getActionData(action, "url");
+    var defaultItemText = linkTitle != "" ? linkTitle.clip(50) : linkUrl.clip(50);
+    var itemText = isDefined(itemText) && itemText != "" ? itemText : defaultItemText;
+    var countText = isDefined(countText) ? countText : this.ratingsAsHtml(key);
+    return ListView.prototype.itemAsHtml.call(this, key, itemText, countText);
+}
+
+LinkListView.prototype.ratingsAsHtml = function(key) {
+    var countText = [];
+    var counts = this.list.getRatingCounts(key);
+    if (counts[HELPFUL_RATING] > 0) countText.push(getRatingImage(HELPFUL_RATING) + counts[HELPFUL_RATING]);
+    if (counts[UNHELPFUL_RATING] > 0) countText.push(getRatingImage(UNHELPFUL_RATING) + counts[UNHELPFUL_RATING]);
+    if (counts[UNRATED] > 0) countText.push(counts[UNRATED] + '&nbsp;unrated');
+    return countText.length > 0 ? countText.join(", ") : "";
 }
 
 //=================================================================================
@@ -508,7 +682,7 @@ LinkList.prototype.filterToRating = function(filter) {
 //=================================================================================
 
 function ResponsePane() {
-	ActionPane.call(this, RESPONSE_PANE, "Responses", RESPONSE_ACTIONS, { "showTagCloud":true });
+	ActionPane.call(this, RESPONSE_PANE, "Responses", { "showTagCloud":true });
 }
 ResponsePane.prototype = Object.create(ActionPane.prototype);
 
@@ -516,15 +690,20 @@ ResponsePane.prototype.createList = function() {
 	return new ResponseList();
 }
 
-ResponsePane.prototype.createExpandedLists = function() {
-	return [ new StudentList(RESPONSE_ACTIONS) ];
-}
-
 function ResponseList() {
 	ActionList.call(this, "Responses", "response", RESPONSE_ACTIONS);
-	this.defaultPaneKey = RESPONSE_PANE;
 }
 ResponseList.prototype = Object.create(ActionList.prototype);
+
+// xx pass in itemLists instead of hard-coding for all DataLists of this type
+ResponseList.prototype.createItemLists = function() {
+    return [ new StudentList(RESPONSE_ACTIONS) ];
+}
+
+function ResponseAccordion(div) {
+    ActionAccordion.call(this, div, this.list);
+}
+ResponseAccordion.prototype = Object.create(ActionAccordion.prototype);
 
 //=================================================================================
 // Language and Stemming

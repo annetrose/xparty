@@ -7,9 +7,9 @@
 # License: Apache License 2.0 - http://www.apache.org/licenses/LICENSE-2.0
 */
 
-var XPARTY_URL = "http://xparty-umd.appspot.com";
+//var XPARTY_URL = "http://xparty-umd.appspot.com";
 //var XPARTY_URL = "http://xparty-test.appspot.com";
-//var XPARTY_URL = "http://localhost:8080";
+var XPARTY_URL = "http://localhost:8080";
 var XPARTY_LOGOUT_URL = XPARTY_URL + "/student_logout";
 var XPARTY_SEARCH_URL = XPARTY_URL + "/student";
 var XPARTY_STUDENT_URL = XPARTY_URL + "/student_info";

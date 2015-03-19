@@ -1,0 +1,39 @@
+{% extends "tagcloud.html" %}
+{# vim: set sw=2 ts=2 expandtab: #}
+
+{% block custom_head %}
+<script type="text/javascript" src="/js/data_list.js"></script>
+<script type="text/javascript" src="/js/data_pane.js"></script>
+<script type="text/javascript" src="/custom/search/js/common_search.js"></script>
+<script type="text/javascript" src="/custom/search/js/teacher_search.js"></script>
+
+<script type="text/javascript">
+
+    // URL: /tagcloud/<activity_code>/<task_idx>
+    // TODO: update contents dynamically as students perform more actions
+    // TODO: delete hyperlinks from tags
+    // TODO: handle when tagcloud larger than space provided
+    // BEHAVIOR: nothing displayed if no actions for task yet (is this desired behavior?)
+    
+    $(document).ready(function() {
+        var list = new QueryList();
+        list.setFilterOption("Helpful");  
+        var taskHistory = gTaskHistories[gTaskIdx];
+        if (isDefined(taskHistory)) {
+            for (var i=0; i<taskHistory.length; i++) {
+                var action = taskHistory[i]; 
+                if (list.isItemData(action, gTaskIdx)) {
+                    list.addItems(action);
+                }
+                // xx does not exist anymore
+                list.updateRatings(action, gTaskIdx);
+            }
+        
+            var tagcloud = new QueryCloud($("#tag_cloud"), list);
+            tagcloud.create();
+        }
+    });
+    
+</script>
+
+{% endblock %}

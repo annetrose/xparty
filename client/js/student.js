@@ -129,7 +129,8 @@ function onStudentAction(actionType, actionDescription, actionData) {
 		cache: false,
 		success: function(data) {
 			if (data.status == 1) {
-				gTaskHistories[data.action.task_idx].push(data.action);
+			    
+				gTaskHistories[getTaskIdx(data.action)].push(data.action);
 				if (typeof(onStudentActionComplete) == "function") {
 					onStudentActionComplete(data);
 				}

@@ -8,6 +8,65 @@
 # License: Apache License 2.0 - http://www.apache.org/licenses/LICENSE-2.0
 */
 
+// action types
+var LOGIN = "log_in";
+var LOGOUT = "log_out";
+
+// sort options
+var SORT_ALPHABETICALLY = "ABC";
+var SORT_BY_FREQUENCY = "Frequency";
+var SORT_BY_LOGIN_STATUS = "Login Status";
+
+//=================================================================================
+// Actions
+//=================================================================================
+
+// <action> = {
+//     "student_nickname":     <string>, 
+//     "action_description":   <string>,
+//     "activity_code":        <string>, 
+//     "action_type":          <string>, 
+//     "timestamp":            <string, e.g., "January 07, 2013 21:18:30">, 
+//     "task_idx":             <integer, starting at 0>,
+//     "action_data":          {<custom>}
+// }
+
+function getActivityCode(action) {
+    return action.activity_code;
+}
+
+function getTaskIdx(action) {
+    return action.task_idx;
+}
+
+function getStudentNickname(action) {
+    return action.student_nickname;
+}
+
+function getActionType(action) {
+    return action.action_type;
+}
+
+function getActionData(action, property) {
+    return action.action_data[property];
+}
+
+function getActionDescription(action) {
+    return action.action_description;
+}
+
+function getActionTimestamp(action) {
+    return action.timestamp;
+}
+
+function getActionValue(action, property) {
+    var value = action[property];
+    if (isUndefined(value)) {
+        value = getActionData(action, property);
+    }
+    return value;
+}
+
 //=================================================================================
 // Strings
 //=================================================================================

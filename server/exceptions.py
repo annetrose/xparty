@@ -63,7 +63,7 @@ class NotAnAuthenticatedTeacherError(XPartyException):
     @staticmethod
     def check(user):
         return not model_access.is_teacher_logged_in(user)
-        
+   
 class WrongPersonError(XPartyException):
     error = "Wrong person"
     

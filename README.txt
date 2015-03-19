@@ -38,7 +38,7 @@ HOW TO CREATE A CUSTOM TEACHER VIEW FOR AN ACTIVITY TYPE
 * Create a javascript file in client/custom/xxx/js named teacher_xxx.js
   where xxx is the activity type. Load js in teacher_xxx.html.
   
-  (Optional) Implement defineCustomPanes() to define any custom data panes.
+  (Optional) Implement addCustomPanes() to add any custom data panes.
 
   To add a custom data pane, add a DataPane to the global array gDataPanes.
   Extend DataPane or ActionPane to create your own DataPane object.
@@ -48,7 +48,7 @@ HOW TO CREATE A CUSTOM TEACHER VIEW FOR AN ACTIVITY TYPE
   - a StudentPane that contains a list of all students and their actions
   - a HistoryPane that contains a complete history of all actions
 
-  (Optional) Implement defineCustomActionDescriptions(action) to define html displayed in action histories.
+  (Optional) Implement customActionDescriptionToHtml(action) to create html displayed in action histories.
   By default, action.action_description is used.
 
   (Optional) Implement initCustomData() to initialize any custom data structures.

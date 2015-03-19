@@ -272,12 +272,10 @@ function getBannerHtml() {
     html += '</div>';
     
     // under development
-    // need tagcloud html from server
-    //html += '<div id="tagcloud_area">';
-    //html += '<iframe src="'+XPARTY_URL+'">';
-    //html += '</iframe>';
-    //html += '</div>';
-
+    if (DEBUG) {
+        html += getTagCloudHtml();
+    }
+    
     return html;
 }
 
@@ -361,6 +359,7 @@ function removeTaskListeners() {
 function onTaskChanged() {
     var taskIdx = getSelectedTaskIndex();
     setTaskDescription(taskIdx);
+    setTagCloudSrc(taskIdx);
     chrome.extension.sendMessage({ type: TASK_CHANGED, task_idx: taskIdx });
 }
 
@@ -451,4 +450,33 @@ function onResponseSaved() {
         storeResponse(response);
         chrome.extension.sendMessage({ "type" : RESPONSE_SUBMITTED, "response" : response });
     }
+}
+
+//=====================================================================
+// Tagcloud
+//=====================================================================
+
+function getTagCloudHtml() {
+    var html = '<div id="tagcloud_area">';
+    html += '<iframe id="tagcloud_frame" src="' + getTagCloudUrl() + '"></iframe>';
+    html += '</div>';
+    return html;
+}
+
+function onTagCloudLoaded() {
+    getBannerElement("#tagcloud_frame").show();
+}
+
+function setTagCloudSrc(taskIdx) {
+    taskIdx = isDefined(taskIdx) ? taskIdx : 0;
+    getBannerElement("#tagcloud_frame").hide();
+    getBannerElement("#tagcloud_frame").load(function() {
+        getBannerElement("#tagcloud_frame").show();
+    });
+    getBannerElement("#tagcloud_frame").attr("src", getTagCloudUrl(taskIdx));
+}
+
+function getTagCloudUrl(taskIdx) {
+    taskIdx = isDefined(taskIdx) ? taskIdx : 0;
+    return XPARTY_URL + '/tagcloud/' + gActivity.activity_code + '/' + taskIdx;
 }

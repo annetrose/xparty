@@ -178,8 +178,8 @@ h3 { }
 
 #data_container { margin: 0px; padding: 0px; }
 #data_pane, #content { margin: 0 0 0 5px; padding: 0px; } 
-ol.expanded_list { list-style-type: none; padding-left: 0px; margin-bottom: 15px; }
-.expanded_item { font-size: 13px; font-size:1.3rem; line-height:1.6em; margin: 0 0 0 2%; }
+ol.list_view { list-style-type: none; padding-left: 0px; margin-bottom: 15px; }
+.list_item { font-size: 13px; font-size:1.3rem; line-height:1.6em; margin: 0 0 0 2%; }
 .item_key { display: none; }
 .item_pane { display: none; }
 .studentLoggedOut { color: #888888; } 

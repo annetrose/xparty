@@ -8,15 +8,10 @@
 # License: Apache License 2.0 - http://www.apache.org/licenses/LICENSE-2.0
 */
 
-function _task_changed(eventObject) {
-	var task_idx = selectedTaskIdx();
-	if (typeof onTaskChanged != "undefined") {
-		onTaskChanged(task_idx);
-	}
-}
-
 $(function() {
-	$("#task_chooser").change(_task_changed);
+	$("#task_chooser").change(function(event) {
+	   $.event.trigger({ type: "xp_task_changed", taskIdx: selectedTaskIdx() });
+	});
 });
 
 function selectedTaskIdx() {

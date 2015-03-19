@@ -10,7 +10,7 @@ from server.utils import helpers
 from google.appengine.api import channel
 import datetime, random, re, string, time
 
-_TIMESTAMP_FORMAT = "%Y%m%d-%H%M%S"
+_TIMESTAMP_FORMAT = "%y%m%d-%H%M%S"
 _DELIMITER = "-"
 _RANDOM_JUNK_SUFFIX_LENGTH = 12
     

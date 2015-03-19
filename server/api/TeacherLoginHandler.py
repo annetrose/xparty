@@ -31,5 +31,5 @@ class TeacherLoginHandler(XPartyHandler):
         session.regenerate_id()
 
         # Redirect to dashboard
-        page = self.request.get("page", "teacher_dashboard")
+        page = self.request.get("page", "")
         self.redirect('/'+page)

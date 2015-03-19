@@ -26,13 +26,10 @@ class XPartyView(webapp2.RequestHandler):
         # Check if user logged in and set self.user   
         self.user = user.get_user(user_type)
      
-    def get_custom_template(self, person_type, activity, ext=0):
+    def get_custom_template(self, person_type, activity):
         template = "".join((person_type, ".html"))
         if activity.activity_type is not None:
-            custom_template = "".join((person_type, "_", activity.activity_type))
-            if ext == 1:
-                custom_template += "_ext"
-            custom_template += ".html"
+            custom_template = "".join((person_type, "_", activity.activity_type, ".html"))
             if os.path.isfile(os.path.join(os.path.dirname(custom_templates.__file__), custom_template)):
                 template = custom_template
         return template;

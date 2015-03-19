@@ -22,7 +22,8 @@ html, body {
     margin: 15px;
 }
 
-#tagcloud_area iframe {
+#tagcloud_frame {
+    background-color: #E9E9E9;
     border: none;
 }
 

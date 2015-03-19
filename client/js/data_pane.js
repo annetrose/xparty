@@ -18,229 +18,127 @@
 // TODO: refresh accordion/tagcloud more efficiently
 // TODO: write descriptions of classes
 
-//=================================================================================
-// DataList - used by DataPane to display UI objects
-//=================================================================================
+// sort options
+var SORT_ALPHABETICALLY = "ABC";
+var SORT_BY_FREQUENCY = "Frequency";
+var SORT_BY_LOGIN_STATUS = "Login Status";
 
-function DataList(title, keyProperty) {
-	this.title = title;
-	this.keyProperty = keyProperty;
-	this.keys = [];
-	this.items = {};
-	this.setFilters([]);
-	this.setSortOptions([ SORT_ALPHABETICALLY, SORT_BY_FREQUENCY ]);
-	this.needToUpdateKeys = true;
-	this.defaultPaneKey = undefined;
+// array of DataPane objects displayed in the teacher view for the loaded activity type
+var gDataPanes = [];
+
+// key for data pane currently being viewed in teacher view
+var gCurrentPaneKey = null;
+
+function initPaneData(taskIdx) {
+    gCurrentPaneKey = null;
+    
+    for (var i in gDataPanes) {
+        gDataPanes[i].initData(taskIdx);
+    }
+    
+    // BEHAVIOR: action events will be raised but pane will not be refreshed 
+    // until showPane() is called since gCurrentPaneKey is null
+    var taskHistory = gTaskHistories[taskIdx];
+    for (var i in taskHistory) {
+        var action = taskHistory[i];
+        var actionType = getActionType(action);
+        $.event.trigger({ type: "xp_" + actionType, action: action });
+    }
 }
 
-DataList.prototype.isItemData = function(data, taskIdx) {
-	// returns whether or not data should be added to this.items
-	return false;
+function addDataPane(pane) {
+    gDataPanes.push(pane);
 }
 
-DataList.prototype.createItems = function(data) {
-	var key = data[this.keyProperty];
-	return isDefined(key) ? [ new DataItem(key, data) ] : [];
+function showPane(paneKey, itemKey) {
+    if (!gCurrentPaneKey || paneKey != gCurrentPaneKey) {
+        gCurrentPaneKey = paneKey;
+        var pane = getDataPane(paneKey);
+        pane.create($("#data_pane"));   
+        $.event.trigger({ type: "xp_pane_visible", pane: pane });
+    }
+    
+    if (isDefined(itemKey)) {
+        pane.accordion.expandItem(itemKey);
+    }
 }
 
-DataList.prototype.addItems = function(data) {
-	var items = this.createItems(data);
-	for (var i=0; i<items.length; i++) {
-		var item = items[i];
-		var key = item.getKey();
-		if (isUndefined(this.items[key])) {
-			this.items[key] = [];
-		}
-		this.items[key].push(item);
-	}
-	this.needToUpdateKeys = true;
-	return items;
+function getDataPanes() {
+    return gDataPanes;
 }
 
-DataList.prototype.updateItems = function(data, index) {
-	var items = this.createItems(data);
-	for (var i=0; i<items.length; i++) {
-		var item = items[i];
-		if (isUndefined(index)) index = 0;
-		var key = item.getKey();
-		this.items[key][index] = item;
-	}
+function getDataPane(key) {
+    var pane = null;
+    for (var i=0; i<gDataPanes.length; i++) {
+        if (gDataPanes[i].key == key) {
+            pane = gDataPanes[i];
+            break;
+        }
+    } 
+    return pane;
 }
 
-DataList.prototype.itemAsHtml = function(key, itemText, countText, paneKey) {
-	// returns html for displaying the items grouped by the same key (e.g., this.items[key])
-	//
-	// Format: item (count)
-	// item = itemText if defined; otherwise key; it is a link to another pane if paneKey is defined
-	// count = countText if defined; otherwise key count; not displayed if countText=""
-	//
-	var itemText = isDefined(itemText) ? itemText : key;
-	var countText = isDefined(countText) ? countText : this.getCount(key);
-    var currentPaneKey = getCurrentPaneKey();
-	var paneKey = isDefined(paneKey) ? paneKey : (isDefined(this.defaultPaneKey) && currentPaneKey != this.defaultPaneKey ? this.defaultPaneKey : undefined);	
-	var html = isDefined(paneKey) ? '<a href="#" class="item_link">' : "";
-	html += htmlEscape(itemText);
-	html += '<span class="item_key">' + htmlEscape(key) + '</span>';
-	html += isDefined(paneKey) ? '<span class="item_pane">' + htmlEscape(paneKey) + '</span></a>' : "";
-	html += isDefined(countText) && countText != "" ? ' (' + countText + ')' : "";
-	return html;
+function getCurrentPane() {
+    return gCurrentPaneKey ? getDataPane(gCurrentPaneKey) : null;
 }
 
-DataList.prototype.registerItemCallbacks = function() {
-	$(".item_link").click(function() {
-		var key = $(".item_key", this).text();
-		var pane = $(".item_pane", this).text();
-		if (isDefined(pane) && isDefined(key)) {
-			showPane(pane, key);
-		}
-	});
-}
-
-DataList.prototype.getKeys = function() {
-	if (this.needToUpdateKeys) {
-		this.sortKeys();
-	}
-	this.needToUpdateKeys = false;
-	return this.keys;
-}
-
-DataList.prototype.getValue = function(key, property, index) {
-	if (isUndefined(index)) index = 0;
-	return this.items[key][index].getValue(property);
-}
-
-DataList.prototype.getValueForSort = function(key) {
-	// items are sorted by their key by default
-	return key;
-}
-
-DataList.prototype.getCount = function(key) {
-	return isDefined(key) ? this.items[key].length : this.getKeys().length;
-}
-
-DataList.prototype.setDefaults = function() {
-	this.setFilter(this.defaultFilter);
-	this.setSortOption(this.defaultSortType);
-}
-
-DataList.prototype.getFilters = function() {
-	return this.filters;
-}
-
-DataList.prototype.setFilters = function(filters) {
-	this.filters = filters;
-	this.filter = filters.length > 0 ? filters[0] : undefined;
-	this.defaultFilter = this.filter;
-}
-
-DataList.prototype.getFilter = function() {
-	return this.filter;
-}
-
-DataList.prototype.setFilter = function(filter) {
-	this.filter = filter;
-}
-
-DataList.prototype.isCurrentFilter = function(filter) {
-	return isDefined(this.filter) && this.filter == filter;
-}
-
-DataList.prototype.getSortOptions = function() {
-	return this.sortOptions;
-}
-
-DataList.prototype.setSortOptions = function(options) {
-	this.sortOptions = options;
-	this.sortType = options.length > 0 ? options[0] : undefined;
-	this.defaultSortType = this.sortType;
-}
-
-DataList.prototype.getSortOption = function() {
-	return this.sortType;
-}
-
-DataList.prototype.setSortOption = function(type) {
-	this.needToUpdateKeys = (isUndefined(this.sortType)) || this.sortType != type;
-	this.sortType = type;
-}
-
-DataList.prototype.isCurrentSortOption = function(type) {
-	return this.sortType == type;
-}
-
-DataList.prototype.sortKeys = function() {
-	this.keys = [];
-	for (key in this.items) {
-		this.keys.push(key);
-	}
-	
-	if (this.sortType == SORT_BY_FREQUENCY) {
-		this.sortKeysByFrequency();
-	}
-	else if (this.sortType == SORT_ALPHABETICALLY) {
-		this.sortKeysAlphabetically();
-	}
-}
-
-DataList.prototype.sortKeysAlphabetically = function() {
-	// case insensitive sort
-	var list = this;
-	this.keys.sort(function(a,b) {	
-		var aValue = list.getValueForSort(a).toLowerCase();
-		var bValue = list.getValueForSort(b).toLowerCase();
-		return (aValue > bValue ? 1 : (aValue < bValue ? -1 : 0));
-	});
-}
-
-DataList.prototype.sortKeysByFrequency = function() {	
-	var list = this;
-	this.keys.sort(function(a,b) {
-		var aCount = list.getCount(a);
-		var bCount = list.getCount(b);
-		var result = (aCount > bCount ? -1 : (aCount < bCount ? 1 : 0));
-		if (result===0) {
-			var aValue = list.getValueForSort(a).toLowerCase();
-			var bValue = list.getValueForSort(b).toLowerCase();
-			result = (aValue > bValue ? 1 : (aValue < bValue ? -1 : 0));
-		}
-		return result;
-	});
-}
-
-DataList.prototype.contains = function(key) {
-	return isDefined(this.items[key]);
-}
-
-DataList.prototype.indexOf = function(key) {
-	var index = -1;
-	for (var i=0; i<this.keys.length; i++) {
-		if (this.keys[i] == key) {
-			index = i;
-			break;
-		}
-	}
-	return index;
+function isCurrentPane(pane) {
+    return gCurrentPaneKey && isDefined(pane) && pane.key == gCurrentPaneKey;
 }
 
 //=================================================================================
-// DataItem
+// ListView
 //=================================================================================
 
-function DataItem(key, data) {
-	this.key = key;
-	this.data = data;
+function ListView(list, groupKey, paneKey) {
+    this.list = list;
+    this.groupKey = groupKey;
+    this.paneKey = paneKey;
 }
 
-DataItem.prototype.getKey = function() {
-	return this.key;
+// xx this.list.title should be in ListView
+ListView.prototype.create = function(div) {
+    this.div = div;
+    var html = "<h5>" + this.list.title + "</h5>";
+    html += '<ol class="list_view"></ol>';
+    $(this.div).html(html);
+    this.refresh();
 }
 
-DataItem.prototype.getData = function() {
-	return this.data;
+ListView.prototype.refresh = function() {
+    var html = "";    
+    var count = 0;
+    var keys = isUndefined(this.groupKey) ? this.list.getKeys() : this.list.getKeysForGroup(this.groupKey);
+    for (var i in keys) {
+        html += '<li class="list_item">';        
+        html += this.itemAsHtml(keys[i]);
+        html += '</li>';
+        count++;
+    }
+    
+    if (count == 0) {
+        html = '<li class="list_item">(none)</li>';
+    }
+    
+    $(this.div).find(".list_view").html(html);
+    registerItemLinkCallbacks();
 }
 
-DataItem.prototype.getValue = function(property) {
-	return this.data[property];
+ListView.prototype.itemAsHtml = function(key, itemText, countText) {
+    // returns html for displaying the items grouped by the same key (e.g., list.items[key])
+    //
+    // Format: item (count)
+    // item = itemText if defined; otherwise key; it is a link to another pane if paneKey is defined
+    // count = countText if defined; otherwise key count; not displayed if countText=""
+    //
+    var itemText = isDefined(itemText) ? itemText : key;
+    var countText = isDefined(countText) ? countText : this.list.getCount(key);
+    var html = isDefined(this.paneKey) ? '<a href="#" class="item_link">' : "";
+    html += htmlEscape(itemText);
+    html += '<span class="item_key">' + htmlEscape(key) + '</span>';
+    html += isDefined(this.paneKey) ? '<span class="item_pane">' + htmlEscape(this.paneKey) + '</span></a>' : "";
+    html += isDefined(countText) && countText != "" ? ' (' + countText + ')' : "";
+    return html;
 }
 
 //=================================================================================
@@ -252,29 +150,18 @@ function DataPane(key, title, options) {
 	this.title = title;
 	this.options = options;
 
-	this.list = null;
-	this.expandedLists = {};
+    // xx do not require accordion/tagcloud
 	this.accordion = null;
 	this.tagcloud = null;
-	this.taskIdx = 0;
-	this.itemsChanged = [];
 }
 
-DataPane.prototype.isPaneData = function(data) {
-	return this.list && this.list.isItemData(data, this.taskIdx);
-}
-
+// xx do not require list
 DataPane.prototype.createList = function() {
-    return new DataList();
-}
-
-DataPane.prototype.createExpandedLists = function() {
-	// lists shown in expanded accordion view (array of DataList)
-	return [];
+    return null;
 }
 
 DataPane.prototype.createAccordion = function(div) {
-	return new AccordionList(div, this.list, this.expandedLists);
+	return new AccordionList(div, this.list);
 }
 
 DataPane.prototype.createTagCloud = function(div) {
@@ -284,30 +171,35 @@ DataPane.prototype.createTagCloud = function(div) {
 DataPane.prototype.create = function(div) {
     var html = '<h3 id="pane_title" style="margin-bottom:10px">'+this.title+'</h3>';
     html += '<div id="pane_key" style="display:none">'+this.key+'</div>';
-    html += '<div id="filters"></div>';
-    html += '<div id="tag_cloud" class="tag_cloud"></div>';
-    html += '<div id="sort_options"></div>';
-    html += '<div id="accordion_list" class="accordion2"></div>';
+    
+    if (this.list) {
+        html += '<div id="filters"></div>';
+        html += '<div id="tag_cloud" class="tag_cloud"></div>';
+        html += '<div id="sort_options"></div>';
+        html += '<div id="accordion_list" class="accordion2"></div>';
+    }
+    
     div.html(html);
 
-	this.list.setDefaults();
-	
-    this.accordion = this.createAccordion($("#accordion_list"));
-    this.accordion.create();
+    if (this.list) {
+	    this.list.setDefaults();
+        this.accordion = this.createAccordion($("#accordion_list"));
+        this.accordion.create();
 
-    if (isDefined(this.options) && isDefined(this.options.showTagCloud) && this.options.showTagCloud) {
-        this.tagcloud = this.createTagCloud($("#tag_cloud"));
-    	this.tagcloud.linkTo(this.accordion);
-    	this.tagcloud.create();
-    } 
+        if (isDefined(this.options) && isDefined(this.options.showTagCloud) && this.options.showTagCloud) {
+            this.tagcloud = this.createTagCloud($("#tag_cloud"));
+    	    this.tagcloud.linkTo(this.accordion);
+    	    this.tagcloud.create();
+        }
     
-    this.createControls();
+        this.createControls();
+    }
 }
 
 DataPane.prototype.createControls = function() {
-	if (this.list.getKeys().length > 0) {
+	if (this.list && this.list.getKeys().length > 0) {
 		this.createSortOptions();
-		this.createFilters();
+		this.createFilterOptions();
 	}
 }
 
@@ -319,7 +211,7 @@ DataPane.prototype.createSortOptions = function() {
 		html += 'Sort by: ';
 		for (var i=0; i<sortOptions.length; i++) {
 			var option = sortOptions[i];
-			html += this.list.isCurrentSortOption(option) ? '<strong>'+option + '</strong> ' : '<a href="#" class="sort">'+option+'</a> ';
+			html += this.list.getSort() == option ? '<strong>'+option + '</strong> ' : '<a href="#" class="sort">'+option+'</a> ';
 		}
 		html += '</span>';
 	}
@@ -329,21 +221,21 @@ DataPane.prototype.createSortOptions = function() {
 	$('.sort').click(function(event) {
 		// sorts the accordion and the tag cloud
 		var pane = $("#sort_options").data("pane");
-		pane.list.setSortOption($(this).html());
+		pane.list.setSort($(this).html());
 		pane.refresh();
 		return false;
 	});
 }
 
-DataPane.prototype.createFilters = function() {
+DataPane.prototype.createFilterOptions = function() {
 	var html = "";
-	var filters = this.list.getFilters();
+	var filters = this.list.getFilterOptions();
 	if (filters.length > 1) {
 		html += '<span style="margin-right:10px;">';
 		html += 'Show: ';
 		for (var i=0; i<filters.length; i++) {
 			var filter = filters[i];
-			html += this.list.isCurrentFilter(filter) ? '<strong>'+filter+'</strong> ' : '<a href="#" class="filter">'+filter+'</a> ';
+			html += this.list.getFilter() == filter ? '<strong>'+filter+'</strong> ' : '<a href="#" class="filter">'+filter+'</a> ';
 		}
 		html += '</span>';
 	}
@@ -359,89 +251,50 @@ DataPane.prototype.createFilters = function() {
 	});
 }
 
-DataPane.prototype.refresh = function(data) {
-	// true if data belongs to pane (recently added) -or- if data is undefined (sort/filter performed)
-	var refreshAll = this.isPaneData(data) || isUndefined(data);
-	if (refreshAll) this.itemsChanged = [];
-	
-	// true if any items have changed
-	var refreshPartial = this.itemsChanged.length > 0;
-		
-	// refresh controls, accordion, and tagcloud
-	if (refreshAll || refreshPartial) {
-		if (refreshAll) this.createControls();
-		this.accordion.refresh(this.itemsChanged);
-		if (this.tagcloud) {
-			this.tagcloud.refresh(this.itemsChanged);
-		}
-		this.itemsChanged = [];
-	}
+// xx changed from passing data to items changed (may be new)
+DataPane.prototype.refresh = function(items) {    
+	// xx true if data belongs to pane (recently added) -or- if data is undefined (sort/filter performed)
 
-	// always refresh expanded accordion item, if any
-	// PERFORMANCE: simplest to always refresh, but only need to if data displayed has changed
-	this.accordion.refreshExpanded();
+    // xx when not to refresh controls
+    if (this.list) {	
+	    this.createControls();
+	    if (this.accordion) {
+		    this.accordion.refresh(items);
+		    this.accordion.refreshExpanded();
+        }
+	    if (this.tagcloud) {
+		    this.tagcloud.refresh(items);
+	    }	
+	}
 }
 
 DataPane.prototype.resize = function() {
 }
 
 DataPane.prototype.initData = function(taskIdx) {
-	this.taskIdx = taskIdx;
+	this.taskIdx = isDefined(taskIdx) ? taskIdx : 0;
 	this.list = this.createList();
-}
-
-DataPane.prototype.updateData = function(data, taskIdx) {
-	if (this.list.isItemData(data, taskIdx)) {
-		var list = this.list.addItems(data);
-		for (var i=0; i<list.length; i++) {
-			var item = list[i];
-			var key = item.getKey();	
-			if (isUndefined(this.expandedLists[key])) {
-				this.expandedLists[key] = this.createExpandedLists();
-			}
-		}
-	}
-	
-	var items = this.list.createItems(data);
-	for (var i=0; i<items.length; i++) {
-		var key = items[i].getKey();
-		// check if expandedLists is defined for key
-        // if not, means data has property with same name as list.keyProperty
-        if (isDefined(this.expandedLists[key])) {
-			for (var j=0; j<this.expandedLists[key].length; j++) {
-				var expandedLists = this.expandedLists[key][j];
-				if (expandedLists.isItemData(data, taskIdx)) {
-					expandedLists.addItems(data);
-				}
-			}
-		}
-	}	
-}
-
-DataPane.prototype.setItemsChanged = function(itemKeys) {
-	this.itemsChanged = itemKeys;
 }
 
 DataPane.prototype.getKey = function() {
 	return this.key;
 }
 
-DataPane.prototype.getCount = function() {
-	return this.list ? this.list.getCount() : -1;
+DataPane.prototype.getTitle = function() {
+    return this.title;
 }
 
-function getCurrentPaneKey() {
-    return $("#pane_key").text();
+DataPane.prototype.getCount = function() {
+	return this.list ? this.list.getCount() : -1;
 }
 
 //=================================================================================
 // AccordionList
 //=================================================================================
 
-function AccordionList(div, list, expandedLists) {
+function AccordionList(div, list) {
 	this.div = div;
 	this.list = list;
-	this.expandedLists = isDefined(expandedLists) ? expandedLists : {};
 	this.expandedIndex = false;
 	this.expandedKey = null;
 }
@@ -450,15 +303,15 @@ AccordionList.prototype.create = function() {
 	var keys = this.list.getKeys();	
 	if (keys.length == 0) {
 		this.div.html('<div style="margin-bottom:15px;">(none)</div>');
-	}
-	
-	else {
+	}	
+	else {	
 		var html = "";
 		for (var i=0; i<keys.length; i++) {
 			var key = keys[i];
-			html += '<div id="item'+(i+1)+'" class="accordion_section"><a href="#"><span id="itemheader'+(i+1)+'">'+this.list.itemAsHtml(key)+'</span></a></div>';		
+			html += '<div id="item'+(i+1)+'" class="accordion_section"><a href="#"><span id="itemheader'+(i+1)+'">'+this.itemAsHtml(key)+'</span></a></div>';		
 			html += '<div id="item'+(i+1)+'_expanded"></div>';
 		}
+		
 		this.div.html(html);
 		
 		this.expandedIndex = this.getExpandedIndex();
@@ -475,37 +328,10 @@ AccordionList.prototype.create = function() {
 		});
 		
 		this.refreshExpanded();
-	}	
-}
-
-AccordionList.prototype.expandedAsHtml = function(key, i) {
-	var html = "";
-	var list = this.expandedLists[key];
-	if (isDefined(list)) {
-		for (var i=0; i<list.length; i++) {
-			var keys = list[i].getKeys();
-			html += "<h5>" + list[i].title + "</h5>";
-			html += '<ol class="expanded_list">';
-			if (keys.length == 0) {
-				html += '<li class="expanded_item">(none)</li>';
-			}
-			else {
-				list[i].sortKeys();
-				var keys = list[i].getKeys();				
-				for (var j=0; j<keys.length; j++) {
-					var itemKey = keys[j];
-					html += '<li class="expanded_item">';
-					html += list[i].itemAsHtml(itemKey);
-					html += '</li>';
-				}
-			}
-			html += "</ol>";
-		}
 	}
-	return html;
 }
 
-AccordionList.prototype.refresh = function(itemsChanged) {	
+AccordionList.prototype.refresh = function(itemsChanged) {    
 	// refresh everything
 	var refreshAll = isUndefined(itemsChanged) || itemsChanged.length==0;
 	if (refreshAll) {
@@ -519,31 +345,36 @@ AccordionList.prototype.refresh = function(itemsChanged) {
 	}
 }
 
-AccordionList.prototype.refreshItem = function(key) {
+AccordionList.prototype.refreshItem = function(item) {
 	// refresh header and expanded section (if open) for item
-	var index = this.list.indexOf(key);
-	if (index != -1) {
-		$("#itemheader"+(index+1)).html(this.list.itemAsHtml(key));
-		if (this.expandedIndex == index) {
-			this.refreshExpanded();
-		}
-	}
+	var index = this.list.indexOf(item.getKey());
+	this.refreshItemIndex(index);
 }
 
-AccordionList.prototype.refreshExpanded = function() {
+AccordionList.prototype.refreshItemIndex = function(index) {
+    // refresh header and expanded section (if open) for item
+    var key = this.list.getKeys()[index];
+    $("#itemheader"+(index+1)).html(this.itemAsHtml(key));
+    if (this.expandedIndex == index) {
+        this.refreshExpanded();
+    }
+}
+
+AccordionList.prototype.refreshExpanded = function() {   
 	if (this.expandedIndex !== false) {
 		var selectedItem = $(".accordion_section:eq("+this.expandedIndex+")");
 		this.expandedKey = $(".item_key", selectedItem).text();
 		if (this.expandedKey) {
 			var div = $("#item"+(this.expandedIndex+1)+"_expanded");
-			var html = this.expandedAsHtml(this.expandedKey, this.expandedIndex);
-			$(div).html(html);
-			this.list.registerItemCallbacks();
+            this.createExpanded(div, this.expandedKey, this.expandedIndex);
 		}
 	}
 	else {
 		this.expandedKey = null;
 	}
+}
+
+AccordionList.prototype.createExpanded = function(div, key, i) {
 }
 
 AccordionList.prototype.expandIndex = function(i) {
@@ -573,6 +404,33 @@ AccordionList.prototype.getExpandedIndex = function() {
 		}
 	}
 	return selectedIndex;
+}
+
+AccordionList.prototype.itemAsHtml = function(key, itemText, countText) {
+    // returns html for displaying the items grouped by the same key (e.g., list.items[key])
+    //
+    // Format: <item> (<count>)
+    // <item> = itemText if defined; otherwise use key;
+    // <count> = countText if defined; otherwise key count; nothing displayed if countText=""
+    //
+    var itemText = isDefined(itemText) ? itemText : key;
+    var countText = isDefined(countText) ? countText : this.list.getCount(key);
+    var html = htmlEscape(itemText);
+    html += '<span class="item_key">' + htmlEscape(key) + '</span>';
+    html += isDefined(countText) && countText != "" ? ' (' + countText + ')' : "";
+    return html;
+}
+
+// xx where should this go
+function registerItemLinkCallbacks() {
+    $(".item_link").unbind("click");
+    $(".item_link").click(function() {
+        var key = $(".item_key", this).text();
+        var pane = $(".item_pane", this).text();
+        if (isDefined(pane) && isDefined(key)) {
+            showPane(pane, key);
+        }
+    });
 }
 
 //=================================================================================
@@ -669,27 +527,41 @@ TagCloud.prototype.getTagWeight = function(key) {
 // ActionPane
 //=================================================================================
 
-function ActionPane(key, title, actionTypes, options) {
+function ActionPane(key, title, options) {
 	DataPane.call(this, key, title, options);
-	this.actionTypes = actionTypes;
 }
 ActionPane.prototype = Object.create(DataPane.prototype);
 
+ActionPane.prototype.initData = function(taskIdx) {
+    DataPane.prototype.initData.call(this, taskIdx);
+    $(this.list).on("xp_action_added", { pane: this }, function(event) {
+        var pane = event.data.pane;
+        if (isCurrentPane(pane)) {
+            pane.refresh();
+        }
+    });
+}
+
 ActionPane.prototype.createList = function() {
 	return new ActionList();
+}
+
+ActionPane.prototype.createAccordion = function(div) {
+    return new ActionAccordion(div, this.list);
 }
 
 ActionPane.prototype.createTagCloud = function(div) {
 	return new ActionCloud(div, this.list);
 }
 
-ActionPane.prototype.initData = function(taskIdx) {
-	DataPane.prototype.initData.call(this, taskIdx);
-	var taskHistory = gTaskHistories[taskIdx];
-	for (var i=0; i<taskHistory.length; i++) {
-		var action = taskHistory[i];	
-		this.updateData(action, taskIdx);
-	}	
+function ActionAccordion(div, list, options) {
+    AccordionList.call(this, div, list, options);
+}
+ActionAccordion.prototype = Object.create(AccordionList.prototype);
+
+ActionAccordion.prototype.itemAsHtml = function(key, itemText, countText, paneKey) {
+    var countText = isDefined(countText) ? countText : this.list.getStudentCount(key);
+    return AccordionList.prototype.itemAsHtml.call(this, key, itemText, countText, paneKey);
 }
 
 //=================================================================================
@@ -703,76 +575,4 @@ ActionCloud.prototype = Object.create(TagCloud.prototype);
 
 ActionCloud.prototype.getTagWeight = function(key) {
 	return this.list.getStudentCount(key);
-}
-
-//=================================================================================
-// ActionList
-//=================================================================================
-
-function ActionList(title, keyProperty, actionTypes) {
-	DataList.call(this, title, keyProperty);
-	this.actionTypes = actionTypes;
-}
-ActionList.prototype = Object.create(DataList.prototype);
-
-ActionList.prototype.createItems = function(action) {
-	var key = action.action_description;
-	if (isDefined(this.keyProperty)) {
-		key = action.action_data[this.keyProperty];
-		if (isUndefined(key)) {
-			key = action[this.keyProperty];
-		}
-	}
-	return isDefined(key) ? [ new DataItem(key, action) ] : [];
-}
-
-ActionList.prototype.isItemData = function(action, taskIdx) {
-	return isDefined(action) && action.task_idx==taskIdx && $.inArray(action.action_type, this.actionTypes) > -1;
-}
-
-ActionList.prototype.itemAsHtml = function(key, itemText, countText, paneKey) {
-	var countText = isDefined(countText) ? countText : this.getStudentCount(key);
-	return DataList.prototype.itemAsHtml.call(this, key, itemText, countText, paneKey);
-}
-
-ActionList.prototype.getActions = function(key) {
-	var actions = [];
-	for (var i=0; i<this.items[key].length; i++) {
-		actions[i] = this.items[key][i].getData();
-	}
-	return actions;
-}
-
-ActionList.prototype.getAction = function(key, i) {
-	var i = isDefined(i) ? i : 0;
-	return isDefined(key) && isDefined(this.items[key][i]) ? this.items[key][i].getData() : null;
-}
-
-ActionList.prototype.getStudentCount = function(key) {
-	var count = 0;
-	var counts = {};
-	for (var i=0; i<this.items[key].length; i++) {
-		var action = this.getAction(key, i);
-		var studentNickname = action.student_nickname;
-		if (isUndefined(counts[studentNickname])) {
-			counts[studentNickname] = action;
-			count++;
-		}
-	}
-	return count;
-}
-
-ActionList.prototype.sortKeysByFrequency = function() {	
-	var list = this;
-	this.keys.sort(function(a,b) {
-		var aCount = list.getStudentCount(a);
-		var bCount = list.getStudentCount(b);
-		var result = (aCount > bCount ? -1 : (aCount < bCount ? 1 : 0));
-		if (result===0) {
-			var aValue = list.getValueForSort(a).toLowerCase();
-			var bValue = list.getValueForSort(b).toLowerCase();
-			result = (aValue > bValue ? 1 : (aValue < bValue ? -1 : 0));
-		}
-		return result;
-	});
 }
