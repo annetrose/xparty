@@ -6,8 +6,9 @@
 #          University of Maryland, Human-Computer Interaction Lab - www.cs.umd.edu/hcil
 # License: Apache License 2.0 - http://www.apache.org/licenses/LICENSE-2.0
 #
-# STILL UNDER DEVELOPMENT - NEVER COMPLETED
 */
+
+********* NOT UNDER ACTIVE DEVELOPMENT - NEVER COMPLETED ***********
 
 TODO: Finish writing instructions
 
