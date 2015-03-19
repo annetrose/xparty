@@ -5,6 +5,8 @@
 #          Anne Rose -- www.cs.umd.edu/hcil/members/arose
 #          University of Maryland, Human-Computer Interaction Lab - www.cs.umd.edu/hcil
 # License: Apache License 2.0 - http://www.apache.org/licenses/LICENSE-2.0
+#
+# STILL UNDER DEVELOPMENT - NEVER COMPLETED
 */
 
 TODO: Finish writing instructions
