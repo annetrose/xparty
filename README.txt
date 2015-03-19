@@ -8,7 +8,7 @@
 #
 */
 
-********* NOT UNDER ACTIVE DEVELOPMENT - NEVER COMPLETED ***********
+********* NOT ACTIVELY BEING DEVELOPED - NEVER COMPLETED ************
 
 TODO: Finish writing instructions
 
